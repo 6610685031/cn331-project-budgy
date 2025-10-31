@@ -16,7 +16,7 @@ https://budgy.krentiz.dev/
 ## Cloning this repository
 ```
 git clone https://github.com/6610685031/cn331-project-budgy
-cd cn331-project-budgy
+cd cn331-project-budgy/budgy
 ```
 
 ## Setting up Virtual Environment
