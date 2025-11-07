@@ -1,38 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta name="keywords" content="manage, money, profit" />
-        <meta name="description" content="Manage Your Finances" />
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Transaction</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-              rel="stylesheet"
-              integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-              crossorigin="anonymous">
-    </head>
-    <body>
-        <form method="post" action="{% url 'add_transaction' %}">
-            {% csrf_token %}
-            <label for="date">Date</label>
-            <input type="date"
-                   id="date"
-                   name="date"
-                   value="{{ today|date:'Y-m-d' }}"
-                   required>
-            <label for="amount">Amount</label>
-            <input type="number" step="0.01" name="amount" required>
-            <label for="category">Category</label>
-            <select name="category" required>
-                <option value="food">Food</option>
-                <option value="transport">Transport</option>
-                <option value="internet">Internet</option>
-            </select>
-            <label for="account">Account</label>
-            <input type="text" name="account" value="Bank 1">
-            <label for="note">Note</label>
-            <input type="text" name="note">
-            <button type="submit">Save</button>
-        </form>
-    </body>
-</html>
+{% extends "home/layout.html" %}
+{% block title %}
+    Transaction
+{% endblock title %}
+{% block body %}
+    <form method="post" action="{% url 'add_transaction' %}">
+        {% csrf_token %}
+        <label for="date">Date</label>
+        <input type="date"
+               id="date"
+               name="date"
+               value="{{ today|date:'Y-m-d' }}"
+               required>
+        <label for="amount">Amount</label>
+        <input type="number" step="0.01" name="amount" required>
+        <label for="category">Category</label>
+        <select name="category" required>
+            <option value="food">Food</option>
+            <option value="transport">Transport</option>
+            <option value="internet">Internet</option>
+        </select>
+        <label for="account">Account</label>
+        <input type="text" name="account" value="Bank 1">
+        <label for="note">Note</label>
+        <input type="text" name="note">
+        <button type="submit">Save</button>
+    </form>
+{% endblock body %}
