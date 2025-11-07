@@ -30,6 +30,7 @@ def back_month_dashboard(request):
 
 @login_required(login_url="/login/")
 def transaction_income_page(request):
+    user = request.user
 
     if request.method == "POST":
         date = request.POST["date"]
