@@ -26,6 +26,26 @@ def back_month_dashboard(request):
 
 def transaction_income_page(request):
 
+    if request.method == "POST":
+        date = request.POST["date"]
+        amount = request.POST["amount"]
+        category = request.POST["category"]
+        account = request.POST["account"]
+        note = request.POST["note"]
+
+        transaction = Transaction.objects.create(
+            user=user,
+            trans_type="income",  # หรือ "expense" ขึ้นอยู่กับประเภท
+            date=timezone.now(),
+            amount=1500.0,
+            category=category,
+        )
+
+        return redirect("transaction_list")
+
+    context = {
+        "today": timezone.now().date(),
+    }
     return render(request, "home/transaction.html", context)
 
 
