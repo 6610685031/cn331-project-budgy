@@ -5,6 +5,7 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.models import User
 from django.contrib import messages
+from home.models import Account
 
 # Create your views here.
 
@@ -73,7 +74,14 @@ def register(request):
                 {"message": "This Username already registry, Please try again."},
             )
 
-        User.objects.create_user(username=username, password=password, email=email)
+        user = User.objects.create_user(
+            username=username, password=password, email=email
+        )
+
+        account = Account.objects.create(
+            user=user, account_name="Cash", type_acc="cash", balance=0.0
+        )
+
         return render(
             request,
             "authorized/login.html",
