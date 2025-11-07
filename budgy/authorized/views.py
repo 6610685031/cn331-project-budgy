@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, logout
+from django.contrib.auth import login as auth_login
 from django.contrib.auth.models import User
 from django.contrib import messages
 
@@ -13,7 +14,7 @@ def home(request):
         messages.error(request, "Please login")
         return redirect(reverse("login"))
 
-    return render(request, "home/home.html")
+    return render(request, "home.html")
 
 
 # Login function
@@ -24,7 +25,7 @@ def login(request):
         user = authenticate(username=username, password=password)
 
         if user is not None:
-            login(request, user)
+            auth_login(request, user)
             # admin:index เป็น url ที่ Django กำหนดไว้ให้เป็นหน้า admin page
             # return redirect(reverse("admin:index"))
 
@@ -34,14 +35,14 @@ def login(request):
             messages.error(request, "This user is not registry yet")
             return redirect(reverse("login"))
 
-    return render(request, "authorized/login.html")
+    return render(request, "login.html")
 
 
 # Logout function
 def logout(request):
     logout(request)
     context = {"message": "You're Logout"}
-    return render(request, "authorized/login.html", context)
+    return render(request, "login.html", context)
 
 
 # Register function
@@ -55,21 +56,21 @@ def register(request):
         if password != password_again:
             return render(
                 request,
-                "authorized/register.html",
+                "register.html",
                 {"message": "Password not match, Please try again."},
             )
 
         if User.objects.filter(username=username).exists():
             return render(
                 request,
-                "authorized/register.html",
+                "register.html",
                 {"message": "This Username already registry, Please try again."},
             )
 
         User.objects.create_user(username=username, password=password, email=email)
         return render(
             request,
-            "authorized/login.html",
+            "login.html",
             {"registry": "Register success"},
         )
-    return render(request, "authorized/register.html")
+    return render(request, "register.html")
