@@ -1,7 +1,8 @@
 import json
+import requests
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Sum
@@ -37,6 +38,7 @@ def back_month_dashboard(request, user_id):
 
 
 @login_required(login_url="/login/")
+@csrf_exempt
 def category_list(request, user_id):
     user = request.user
 
@@ -57,55 +59,63 @@ def category_list(request, user_id):
             Category.objects.filter(user=user, category_name=delete_name).delete()
 
         return redirect(
-            "category_list"
+            request.META.get("HTTP_REFERER") or "category_list", user_id=request.user.id
         )  # Redirect to the same page to refresh the list
 
     else:
         # GET Request: Fetch all categories for the user
         categories = Category.objects.filter(user=user)
-        return render(request, "category_list.html", {"categories": categories})
+        return render(request, "home/category_list.html", {"categories": categories})
 
 
 @login_required(login_url="/login/")
+@csrf_exempt
 def transaction_income_page(request, user_id):
     user_now = request.user
     transaction_type = "income"
 
     if request.method == "POST":
-        date = request.POST["date"]
-        amount = request.POST["amount"]
-        name_category = request.POST["category_name"]
-        account_name = request.POST["account"]
+        if "date" not in request.POST:
+            category_list(request, user_id)
+        else:
 
-        # fetch category from database by user, category_name and type
-        category_check = Category.objects.filter(
-            user=user_now, category_name=name_category, trans_type=transaction_type
-        )
+            date = request.POST["date"]
+            amount = request.POST["amount"]
+            name_category = request.POST["category"]
+            account_name = request.POST["account"]
 
-        account = Account.objects.get(account_name=account_name)
-
-        # Check if this category exist
-        if not category_check.exists():
-            category = Category.objects.create(
+            # fetch category from database by user, category_name and type
+            category_check = Category.objects.filter(
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
-        else:
-            category = category_check.first()
 
-        # create transaction income model
-        income = Income.objects.create(
-            user=user_now,
-            trans_type=transaction_type,
-            date=date,
-            amount=amount,
-            category=category,
-            to_account=account,
-        )
+            account = Account.objects.get(account_name=account_name)
 
-        return redirect(reverse("transaction_income"))
+            # Check if this category exist
+            if not category_check.exists():
+                category = Category.objects.create(
+                    user=user_now,
+                    category_name=name_category,
+                    trans_type=transaction_type,
+                )
+            else:
+                category = category_check.first()
+
+            # create transaction income model
+            income = Income.objects.create(
+                user=user_now,
+                trans_type=transaction_type,
+                date=date,
+                amount=amount,
+                category=category,
+                to_account=account,
+            )
+
+            return redirect(reverse("transaction_income"))
 
     context = {
         "today": timezone.now().date(),
+        "categories": Category.objects.filter(user=request.user),
     }
     return render(request, "home/transaction.html", context)
 
