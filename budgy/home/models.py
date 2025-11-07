@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 # Category Model
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category_name = models.CharField(max_length=100, primary_key=True)
+    category_name = models.CharField(max_length=100)
     trans_type = models.CharField(max_length=100)
 
     def __str__(self):

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Form</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      background: #eaf1fb;
+      padding: 20px;
+    }
+
+    .sidebar {
+      width: 180px;
+      background: #3572ef;
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .container {
+      flex: 1;
+      margin-left: 20px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .form-box, .category-box {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      width: 100%;
+    }
+
+    input, select, button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .category-item {
+      background: #f2f2f2;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .category-item:hover {
+      background: #cde1ff;
+    }
+
+    .category-list {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .category-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+  </style>
+  <script>
+        // ฟังก์ชันเพื่อใส่ค่าที่คลิกเข้าไปใน input text
+        function setCategory(categoryName) {
+          document.getElementById('category_input').value = categoryName;
+        }
+
+        function deleteCategoryFromDB(categoryName, transType) {
+          const formData = new FormData();
+          formData.append('category_name', categoryName);
+          formData.append('trans_type', transType);
+          formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+          // ส่งคำขอ POST ไปยัง Django View
+          fetch(`/category-delete/`, {
+              method: 'POST',
+              body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  // ถ้าลบสำเร็จ ลบหมวดหมู่จาก UI ทันที
+                  const categoryElement = document.getElementById(`category-${categoryName}-${transType}`);
+                  categoryElement.remove();  // ลบหมวดหมู่จากหน้าเว็บ
+              }
+          })
+          .catch(error => {
+              console.error('เกิดข้อผิดพลาด:', error);
+          });
+        }
+    </script>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h3>MENU</h3>
+    <p>Home</p>
+    <p>Transaction</p>
+    <p>Stats</p>
+  </div>
+
+  <div class="container">
+    <!-- ฟอร์มหลัก -->
+    <div class="form-box">
+      <h3>Add Transaction</h3>
+      <form action="{% url 'transaction_income' user_id=request.user.id %}" method="post">
+        {% csrf_token %}
+        <div class="form-group mb-3">
+
+          <label for="date">Date</label>
+          <input type="date" name="date" class="form-control" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="amount">Amount</label>
+          <input type="text" name="amount" class="form-control" placeholder="Enter amount" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="category_name">Category</label>
+          <input type="text" id="category_input" name="category_name" class="form-control" placeholder="Enter category" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="account">account</label>
+          <input type="text" name="account" class="form-control" placeholder="Enter account" required>
+        
+        </div>
+
+        <input type="hidden" name="trans_type" value="income">
+
+        <button type="submit" class="btn btn-success w-100 mb-2">Save</button><br>
+      </form>
+    </div>
+
+    <!-- หมวดหมู่ -->
+    <div class="category-box">
+      <h3>Category</h3>
+        {% for category in category_list %}
+          <li>
+            <!-- เมื่อคลิกที่หมวดหมู่ จะเรียกฟังก์ชัน setCategory() และส่งชื่อหมวดหมู่ไป -->
+            <button onclick="setCategory('{{ category.category_name }}')">{{ category.category_name }}</button>
+          </li>
+        {% endfor %}
+
+      <form action="{% url 'category_list'}" method="POST">
+        
+      </form>
+
+      
+    </div>
+  </div>
+
+</body>
+</html>
