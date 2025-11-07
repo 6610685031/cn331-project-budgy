@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.contrib.auth import authenticate, logout
+from django.contrib.auth import authenticate
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -14,7 +15,7 @@ def home(request):
         messages.error(request, "Please login")
         return redirect(reverse("login"))
 
-    return render(request, "home.html")
+    return render(request, "home/home.html")
 
 
 # Login function
@@ -35,14 +36,14 @@ def login(request):
             messages.error(request, "This user is not registry yet")
             return redirect(reverse("login"))
 
-    return render(request, "login.html")
+    return render(request, "authorized/login.html")
 
 
 # Logout function
 def logout(request):
-    logout(request)
+    auth_logout(request)
     context = {"message": "You're Logout"}
-    return render(request, "login.html", context)
+    return redirect(reverse("login"), context)
 
 
 # Register function
@@ -56,21 +57,21 @@ def register(request):
         if password != password_again:
             return render(
                 request,
-                "register.html",
+                "authorized/register.html",
                 {"message": "Password not match, Please try again."},
             )
 
         if User.objects.filter(username=username).exists():
             return render(
                 request,
-                "register.html",
+                "authorized/register.html",
                 {"message": "This Username already registry, Please try again."},
             )
 
         User.objects.create_user(username=username, password=password, email=email)
         return render(
             request,
-            "login.html",
+            "authorized/login.html",
             {"registry": "Register success"},
         )
-    return render(request, "register.html")
+    return render(request, "authorized/register.html")

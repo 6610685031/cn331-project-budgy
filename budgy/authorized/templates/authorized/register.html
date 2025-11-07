@@ -1,6 +1,11 @@
-{% extends "layout.html" %}
+{% extends "authorized/layout.html" %}
 {% block body %}
-  <div class="container mt-5" style="max-width: 600px;">
+  <style>
+.register_body {
+  max-width: 600px;
+}
+  </style>
+  <div class="container mt-5 register_body">
     <!-- กรอบรอบคำว่า Register -->
     <div class="alert alert-primary text-center">
       <h1 class="mb-0">Register</h1>
@@ -60,4 +65,4 @@
       Already have an account? <a href="{% url 'login' %}">Login here</a>
     </div>
   </div>
-{% endblock %}
+{% endblock body %}
