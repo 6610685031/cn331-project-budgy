@@ -13,20 +13,25 @@ from .models import Transaction, Account, Category, MonthReport, Income, Expense
 
 # Create your views here
 @login_required(login_url="/login/")
-# def home_page(request, username):
-def home_page(request):
-    # return render(request, "home/home.html", {"user": user})
+def landing_page(request, user_id=None):
+    if request.path == "/":
+        return redirect("/" + str(request.user.id) + "/home/")
+    return redirect("/" + str(request.user.id) + request.path)
+
+
+@login_required(login_url="/login/")
+def home_page(request, user_id):
     return render(request, "home/home.html")
 
 
 @login_required(login_url="/login/")
-def dashboard_today_page(request):
+def dashboard_today_page(request, user_id):
 
     return render(request, "home/dashboard.html")
 
 
 @login_required(login_url="/login/")
-def back_month_dashboard(request):
+def back_month_dashboard(request, user_id):
 
     return render(request, "home/dashboard.html")
 
@@ -102,20 +107,20 @@ def transaction_income_page(request):
 
 
 @login_required(login_url="/login/")
-def transaction_expense_page(request):
+def transaction_expense_page(request, user_id):
     return render(request, "home/transaction.html")
 
 
 @login_required(login_url="/login/")
-def transaction_transfer_page(request):
+def transaction_transfer_page(request, user_id):
     return render(request, "home/transaction.html")
 
 
 @login_required(login_url="/login/")
-def stats_page(request):
+def stats_page(request, user_id):
     return render(request, "home/stats.html")
 
 
 @login_required(login_url="/login/")
-def settings_page(request):
+def settings_page(request, user_id):
     return render(request, "home/settings.html")
