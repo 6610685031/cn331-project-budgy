@@ -3,54 +3,28 @@
   Home
 {% endblock title %}
 {% block body %}
-  <!-- Hero -->
-  <section class="hero">
-    <h1>'BUDGY' Manage Your Finances</h1>
-    <p>Smart, Simple, and Stylish way to handle your money.</p>
-  </section>
-  <!-- Canva Embed -->
-  <div class="embed-container">
-    <iframe loading="lazy"
-            src="https://www.canva.com/design/DAG2LcR2s3g/7J1Ntk9fi2PM4Z2yS63HhQ/view?embed"
-            allowfullscreen>
-    </iframe>
-  </div>
-  <!-- Team -->
-  <section class="team">
-    <h2>รายชื่อผู้จัดทำ</h2>
-    <div class="container">
-      <div class="row justify-content-center g-4">
-        <div class="col-md-4 col-lg-3">
-          <div class="p-3 member-card">
-            <h5>พลกฤต กันยายน</h5>
-            <p>6510615229</p>
-          </div>
-        </div>
-        <div class="col-md-4 col-lg-3">
-          <div class="p-3 member-card">
-            <h5>พลอยพรรณ เต็งประยูร</h5>
-            <p>6510615245</p>
-          </div>
-        </div>
-        <div class="col-md-4 col-lg-3">
-          <div class="p-3 member-card">
-            <h5>อติชาต เพ็ญวงษ์</h5>
-            <p>6610685015</p>
-          </div>
-        </div>
-        <div class="col-md-4 col-lg-3">
-          <div class="p-3 member-card">
-            <h5>กฤติน ด่านซ้าย</h5>
-            <p>6610685031</p>
-          </div>
-        </div>
-        <div class="col-md-4 col-lg-3">
-          <div class="p-3 member-card">
-            <h5>ณัฐศิษฏ์ ฐิติธรรมคุณ</h5>
-            <p>6610685155</p>
-          </div>
-        </div>
-      </div>
+  <style>
+    body {
+      font-family: "Chakra Petch", sans-serif;
+      background: linear-gradient(135deg, #c9f9ff, #87ceeb);
+      min-height: 100vh;
+    }
+    .balance-box {
+      background: white;
+      padding: 35px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 420px;
+    }
+  </style>
+  <!-- Content -->
+  <div class="d-flex flex-column align-items-center justify-content-center"
+       style="height:80vh">
+    <h1 class="mb-4">Welcome back! 👋</h1>
+    <div class="balance-box">
+      <h3>Your Current Balance</h3>
+      <h1 style="font-weight:700; color:#0077b6;">฿ 25,500.00</h1>
     </div>
-  </section>
+  </div>
 {% endblock body %}

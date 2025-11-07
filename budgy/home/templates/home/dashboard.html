@@ -3,26 +3,129 @@
     Dashboard
 {% endblock title %}
 {% block body %}
-    <h1>Dashboard - {{ month }}/{{ year }}</h1>
-    <h2>Transaction Ratio</h2>
-    <p>Income %: {{ income_ratio }}%</p>
-    <p>Expense %: {{ expense_ratio }}%</p>
-    <h2>Transactions</h2>
-    <h3>Income</h3>
-    <ul>
-        {% for transaction in income_transactions %}
-            <li>{{ transaction.date }} - {{ transaction.amount }} - {{ transaction.category }}</li>
-        {% endfor %}
-    </ul>
-    <h3>Expense</h3>
-    <ul>
-        {% for transaction in expense_transactions %}
-            <li>{{ transaction.date }} - {{ transaction.amount }} - {{ transaction.category }}</li>
-        {% endfor %}
-    </ul>
-    <h2>Total Balance from Accounts</h2>
-    <ul>
-        {% for account in accounts %}<li>{{ account.account_name }}: {{ account.balance }}</li>{% endfor %}
-    </ul>
-    <h3>Total Balance: {{ total_balance }}</h3>
+    <style>
+    body {
+      font-family: "Chakra Petch", sans-serif;
+      background: #f4fcff;
+      min-height: 100vh;
+    }
+
+    .box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+    }
+
+    .spending-box { height: 350px; }
+    </style>
+    <!-- Dashboard Layout -->
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Center: Current Spending -->
+            <div class="col-lg-8">
+                <div class="box spending-box">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Current Spending</h4>
+                        <!-- View Mode Toggle -->
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-primary active" id="btn-daily">Daily</button>
+                            <button class="btn btn-outline-primary" id="btn-monthly">Monthly</button>
+                            <button class="btn btn-outline-primary" id="btn-yearly">Yearly</button>
+                        </div>
+                    </div>
+                    <!-- Date Selectors -->
+                    <div class="mb-3" id="date-selectors">
+                        <input type="date"
+                               id="daily-picker"
+                               class="form-control"
+                               style="max-width: 220px">
+                        <input type="month"
+                               id="monthly-picker"
+                               class="form-control d-none"
+                               style="max-width: 220px">
+                        <input type="number"
+                               id="yearly-picker"
+                               class="form-control d-none"
+                               style="max-width: 220px"
+                               placeholder="Enter Year (e.g., 2025)"
+                               min="2000"
+                               max="2100">
+                    </div>
+                    <!-- Spending List -->
+                    <ul class="list-group"
+                        id="spending-list"
+                        style="max-height: 300px;
+                               overflow-y: auto">
+                        <li class="list-group-item text-muted text-center">Select a date to view spending...</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Right Column -->
+            <div class="col-lg-4 d-flex flex-column gap-4">
+                <!-- Top-right: Transaction Rate -->
+                <div class="box">
+                    <h5>Transaction Rate</h5>
+                    <p>Example: 12 transactions / week</p>
+                </div>
+                <!-- Bottom-right: Account Balance -->
+                <div class="box">
+                    <h5>Account Balance</h5>
+                    <h2 style="color:#0077b6;">฿ 25,500.00</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function renderList(spendings, mode) {
+          const list = document.getElementById("spending-list");
+          list.innerHTML = "";
+        
+          if (spendings.length === 0) {
+            list.innerHTML = `<li class="list-group-item text-center text-muted">No records found.</li>`;
+            return;
+          }
+      
+          spendings.forEach(item => {
+            let label = mode === "daily" ? item.time : item.date;
+            list.innerHTML += `
+              <li class="list-group-item d-flex justify-content-between">
+                <span>${label} — ${item.category || "Uncategorized"}</span>
+                <strong>฿ ${item.amount}</strong>
+              </li>`;
+          });
+        }
+        
+        async function fetchSpending(mode, value) {
+          const params = new URLSearchParams({ mode: mode });
+        
+          if (mode === "daily") params.append("date", value);
+          if (mode === "monthly") params.append("month", value);
+          if (mode === "yearly") params.append("year", value);
+        
+          const response = await fetch(`/api/spending/?${params.toString()}`);
+          const data = await response.json();
+          renderList(data.spendings, mode);
+        }
+        
+        // Mode switching
+        function setMode(mode) {
+          document.getElementById("daily-picker").classList.toggle("d-none", mode !== "daily");
+          document.getElementById("monthly-picker").classList.toggle("d-none", mode !== "monthly");
+          document.getElementById("yearly-picker").classList.toggle("d-none", mode !== "yearly");
+        
+          ["btn-daily","btn-monthly","btn-yearly"].forEach(id =>
+            document.getElementById(id).classList.remove("active")
+          );
+          document.getElementById(`btn-${mode}`).classList.add("active");
+        }
+        
+        document.getElementById("btn-daily").onclick = () => setMode("daily");
+        document.getElementById("btn-monthly").onclick = () => setMode("monthly");
+        document.getElementById("btn-yearly").onclick = () => setMode("yearly");
+        
+        document.getElementById("daily-picker").onchange = (e) => fetchSpending("daily", e.target.value);
+        document.getElementById("monthly-picker").onchange = (e) => fetchSpending("monthly", e.target.value);
+        document.getElementById("yearly-picker").onchange = (e) => fetchSpending("yearly", e.target.value);
+    </script>
 {% endblock body %}
