@@ -115,19 +115,22 @@
              id="navbarContent">
           <ul class="navbar-nav mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
+              <a class="nav-link active"
+                 aria-current="page"
+                 href="{% url 'home' request.user.id %}">Home</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+              <a class="nav-link" href="{% url 'dashboard' request.user.id %}">Dashboard</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'transaction_income' %}">Transaction</a>
+              <a class="nav-link"
+                 href="{% url 'transaction_income' request.user.id %}">Transaction</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'stats' %}">Stats</a>
+              <a class="nav-link" href="{% url 'stats' request.user.id %}">Stats</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'settings' %}">Settings</a>
+              <a class="nav-link" href="{% url 'settings' request.user.id %}">Settings</a>
             </li>
           </ul>
         </div>
