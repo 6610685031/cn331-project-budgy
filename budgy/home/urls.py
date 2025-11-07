@@ -22,9 +22,6 @@ urlpatterns = [
     ),
     path("<int:user_id>/stats/", views.stats_page, name="stats"),
     path("<int:user_id>/settings/", views.settings_page, name="settings"),
-    path("<int:user_id>/category/add", views.category_add, name="category_add"),
-    path(
-        "<int:user_id>/category/delete", views.category_delete, name="category_delete"
-    ),
+    path("<int:user_id>/edit/category/", views.category_list, name="category_list"),
     re_path(r"^([a-zA-Z]+)/$", views.landing_page, name="landing"),
 ]
