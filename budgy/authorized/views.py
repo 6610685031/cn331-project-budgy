@@ -65,6 +65,7 @@ def register(request):
                 "authorized/register.html",
                 {"message": "This Username already registry, Please try again."},
             )
+
         User.objects.create_user(username=username, password=password, email=email)
         return render(
             request,
