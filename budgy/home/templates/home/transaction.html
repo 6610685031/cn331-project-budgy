@@ -1,28 +1,163 @@
-{% extends "home/layout.html" %}
-{% block title %}
-    Transaction
-{% endblock title %}
-{% block body %}
-    <form method="post" action="{% url 'add_transaction' %}">
-        {% csrf_token %}
-        <label for="date">Date</label>
-        <input type="date"
-               id="date"
-               name="date"
-               value="{{ today|date:'Y-m-d' }}"
-               required>
-        <label for="amount">Amount</label>
-        <input type="number" step="0.01" name="amount" required>
-        <label for="category">Category</label>
-        <select name="category" required>
-            <option value="food">Food</option>
-            <option value="transport">Transport</option>
-            <option value="internet">Internet</option>
-        </select>
-        <label for="account">Account</label>
-        <input type="text" name="account" value="Bank 1">
-        <label for="note">Note</label>
-        <input type="text" name="note">
-        <button type="submit">Save</button>
-    </form>
-{% endblock body %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transaction Form</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    background: #eaf1fb;
+    padding: 20px;
+  }
+
+  .sidebar {
+    width: 180px;
+    background: #3572ef;
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .container {
+    flex: 1;
+    margin-left: 20px;
+    display: flex;
+    gap: 20px;
+  }
+
+  .form-box, .category-box {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    width: 100%;
+  }
+
+  input, select, button {
+    width: 100%;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+
+  .category-item {
+    background: #f2f2f2;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .category-item:hover {
+    background: #cde1ff;
+  }
+
+  .category-list {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .category-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h3>MENU</h3>
+    <p>Home</p>
+    <p>Transaction</p>
+    <p>Stats</p>
+  </div>
+
+  <div class="container">
+    <!-- ฟอร์มหลัก -->
+    <div class="form-box">
+      <h3>Add Transaction</h3>
+      <label>Date</label>
+      <input type="date" id="date">
+      <label>Amount</label>
+      <input type="number" id="amount" placeholder="0.00">
+      <label>Category</label>
+      <input type="text" id="category" placeholder="Select from list →">
+      <label>Account</label>
+      <input type="text" id="account" placeholder="Bank 1">
+      <label>Note</label>
+      <input type="text" id="note">
+      <button id="saveBtn" style="background:#41b06e;color:white;">Save</button>
+    </div>
+
+    <!-- หมวดหมู่ -->
+    <div class="category-box">
+      <h3>Category</h3>
+      <div id="categoryList" class="category-list">
+        <!-- Category จะมาแสดงตรงนี้ -->
+      </div>
+
+      <div class="category-actions">
+        <input type="text" id="newCategory" placeholder="Add category...">
+        <button onclick="addCategory()">➕</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const categoryInput = document.getElementById('category');
+  const listContainer = document.getElementById('categoryList');
+  const newCategoryInput = document.getElementById('newCategory');
+
+  async function loadCategories() {
+    const res = await fetch('/api/categories/');
+    const categories = await res.json();
+    renderCategories(categories);
+  }
+
+  function renderCategories(categories) {
+    listContainer.innerHTML = '';
+    categories.forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'category-item';
+      div.textContent = cat.category_name;
+      div.onclick = () => categoryInput.value = cat.category_name;
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '✖';
+      delBtn.style.float = 'right';
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        await fetch('/api/categories/', {
+          method: 'DELETE',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({category_name: cat.category_name})
+        });
+        loadCategories();
+      };
+
+      div.appendChild(delBtn);
+      listContainer.appendChild(div);
+    });
+  }
+
+  async function addCategory() {
+    const name = newCategoryInput.value.trim();
+    if (!name) return;
+    await fetch('/api/categories/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({category_name: name, trans_type: 'Expense'})
+    });
+    newCategoryInput.value = '';
+    loadCategories();
+  }
+
+  loadCategories();
+</script>
+
+</body>
+</html>

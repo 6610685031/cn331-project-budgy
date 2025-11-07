@@ -22,4 +22,5 @@ urlpatterns = [
     ),
     path("<int:user_id>/stats/", views.stats_page, name="stats"),
     path("<int:user_id>/settings/", views.settings_page, name="settings"),
+    path("edit/category/", views.category_list, name="category_list"),
 ]

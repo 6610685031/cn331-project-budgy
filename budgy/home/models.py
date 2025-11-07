@@ -31,8 +31,7 @@ class MonthReport(models.Model):
 # Account Model
 class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account_id = models.AutoField(primary_key=True)
-    account_name = models.CharField(max_length=100)
+    account_name = models.CharField(max_length=100, primary_key=True)
     type_acc = models.CharField(max_length=50)
     balance = models.FloatField()
 
