@@ -78,7 +78,7 @@ def register(request):
             username=username, password=password, email=email
         )
 
-        account = Account.objects.create(
+        Account.objects.create(
             user=user, account_name="Cash", type_acc="cash", balance=0.0
         )
 

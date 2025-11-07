@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 # Category Model
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category_name = models.CharField(max_length=100)
+    category_name = models.CharField(max_length=100, primary_key=True)
     trans_type = models.CharField(max_length=100)
 
     def __str__(self):
@@ -31,7 +31,7 @@ class MonthReport(models.Model):
 # Account Model
 class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account_name = models.CharField(max_length=100, primary_key=True)
+    account_name = models.CharField(max_length=100)
     type_acc = models.CharField(max_length=50)
     balance = models.FloatField()
 

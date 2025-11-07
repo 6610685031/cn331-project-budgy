@@ -133,34 +133,51 @@
     }
   }
   </style>
+
   <div class="sidebar">
     <h3>MENU</h3>
     <p>Home</p>
     <p>Transaction</p>
     <p>Stats</p>
   </div>
+
   <div class="container">
     <!-- ฟอร์มหลัก -->
     <div class="form-box">
       <h3>Add Transaction</h3>
-      <form method="POST">
+      <form action="{% url 'transaction_income' user_id=request.user.id %}" method="post">
         {% csrf_token %}
-        <label>Date</label>
-        <input type="date" id="date" name="date">
-        <label>Amount</label>
-        <input type="number" id="amount" name="amount" placeholder="0.00">
-        <label>Category</label>
-        <input type="text"
-               id="category"
-               name="category"
-               placeholder="Select from list →">
-        <label>Account</label>
-        <input type="text" id="account" name="account" placeholder="Bank 1">
-        <label>Note</label>
-        <input type="text" id="note" name="note">
-        <button id="saveBtn" style="background:#41b06e;color:white;">Save</button>
+        <div class="form-group mb-3">
+
+          <label for="date">Date</label>
+          <input type="date" name="date" class="form-control" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="amount">Amount</label>
+          <input type="text" name="amount" class="form-control" placeholder="Enter amount" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="category_name">Category</label>
+          <input type="text" id="category_input" name="category_name" class="form-control" placeholder="Enter category" required>
+        
+        </div>
+        <div class="form-group mb-3">
+
+          <label for="account">account</label>
+          <input type="text" name="account" class="form-control" placeholder="Enter account" required>
+        
+        </div>
+
+        <input type="hidden" name="trans_type" value="income">
+
+        <button type="submit" class="btn btn-success w-100 mb-2">Save</button><br>
       </form>
     </div>
+      
   </div>
   {% include "home/category_list.html" %}
 {% endblock body %}

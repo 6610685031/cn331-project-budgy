@@ -43,14 +43,20 @@ def category_list(request, user_id):
     user = request.user
 
     if request.method == "POST":
-        name = request.POST["category_name"]
-        type = request.POST["trans_type"]
+        # Add Category
+        category_name = request.POST.get("category_name")
+        if category_name:
+            # Avoid duplicate categories
+            Category.objects.get_or_create(
+                user=user,
+                category_name=category_name,
+                defaults={"trans_type": "Expense"},
+            )
 
-        category = Category.objects.create(
-            user=user, category_name=name, trans_type=type
-        )
-        category.save()
-        return redirect(request.META.get("HTTP_REFERER"))
+        # Delete Category
+        delete_name = request.POST.get("delete_category_name")
+        if delete_name:
+            Category.objects.filter(user=user, category_name=delete_name).delete()
 
         return redirect(
             request.META.get("HTTP_REFERER") or "category_list", user_id=request.user.id
@@ -75,7 +81,7 @@ def transaction_income_page(request, user_id):
 
             date = request.POST["date"]
             amount = request.POST["amount"]
-            name_category = request.POST["category"]
+            name_category = request.POST["category_name"]
             account_name = request.POST["account"]
 
             # fetch category from database by user, category_name and type
@@ -83,7 +89,7 @@ def transaction_income_page(request, user_id):
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
-            account = Account.objects.get(account_name=account_name)
+            account = Account.objects.get(user=user_now, account_name=account_name)
 
             # Check if this category exist
             if not category_check.exists():
@@ -105,7 +111,9 @@ def transaction_income_page(request, user_id):
                 to_account=account,
             )
 
-            return redirect(reverse("transaction_income"))
+            return redirect(
+                reverse("transaction_income", kwargs={"user_id": request.user.id})
+            )
 
     context = {
         "today": timezone.now().date(),
