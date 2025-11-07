@@ -36,36 +36,38 @@ def back_month_dashboard(request, user_id):
     return render(request, "home/dashboard.html")
 
 
-@csrf_exempt
-def category_list(request):
+@login_required(login_url="/login/")
+def category_list(request, user_id):
     user = request.user
-    if request.method == "GET":
-        categories = Category.objects.filter(user=user).values(
-            "category_name", "trans_type"
-        )
-        return JsonResponse(list(categories), safe=False)
 
-    elif request.method == "POST":
-        data = json.loads(request.body)
-        name = data.get("category_name")
-        trans_type = data.get("trans_type", "Expense")
-        if not name:
-            return JsonResponse({"error": "category_name required"}, status=400)
+    if request.method == "POST":
+        # Add Category
+        category_name = request.POST.get("category_name")
+        if category_name:
+            # Avoid duplicate categories
+            Category.objects.get_or_create(
+                user=user,
+                category_name=category_name,
+                defaults={"trans_type": "Expense"},
+            )
 
-        cat, created = Category.objects.get_or_create(
-            user=user, category_name=name, defaults={"trans_type": trans_type}
-        )
-        return JsonResponse({"created": created, "category": name})
+        # Delete Category
+        delete_name = request.POST.get("delete_category_name")
+        if delete_name:
+            Category.objects.filter(user=user, category_name=delete_name).delete()
 
-    elif request.method == "DELETE":
-        data = json.loads(request.body)
-        name = data.get("category_name")
-        Category.objects.filter(user=user, category_name=name).delete()
-        return JsonResponse({"deleted": name})
+        return redirect(
+            "category_list"
+        )  # Redirect to the same page to refresh the list
+
+    else:
+        # GET Request: Fetch all categories for the user
+        categories = Category.objects.filter(user=user)
+        return render(request, "category_list.html", {"categories": categories})
 
 
 @login_required(login_url="/login/")
-def transaction_income_page(request):
+def transaction_income_page(request, user_id):
     user_now = request.user
     transaction_type = "income"
 
@@ -80,6 +82,8 @@ def transaction_income_page(request):
             user=user_now, category_name=name_category, trans_type=transaction_type
         )
 
+        account = Account.objects.get(account_name=account_name)
+
         # Check if this category exist
         if not category_check.exists():
             category = Category.objects.create(
@@ -91,7 +95,7 @@ def transaction_income_page(request):
         # create transaction income model
         income = Income.objects.create(
             user=user_now,
-            trans_type=transaction_type,  # หรือ "expense" ขึ้นอยู่กับประเภท
+            trans_type=transaction_type,
             date=date,
             amount=amount,
             category=category,
