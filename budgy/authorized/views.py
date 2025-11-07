@@ -9,17 +9,12 @@ from django.contrib import messages
 # Create your views here.
 
 
-# To User Home Page
-def home(request):
-    if not request.user.is_authenticated:
-        messages.error(request, "Please login")
-        return redirect(reverse("login"))
-
-    return render(request, "home/home.html")
-
-
 # Login function
 def login(request):
+    if request.user.is_authenticated:
+        # User is logged in, redirect to previous page or home
+        return redirect(request.META.get("HTTP_REFERER") or reverse("home"))
+
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
@@ -48,6 +43,10 @@ def logout(request):
 
 # Register function
 def register(request):
+    if request.user.is_authenticated:
+        # User is logged in, redirect to previous page or home
+        return redirect(request.META.get("HTTP_REFERER") or reverse("home"))
+
     if request.method == "POST":
         username = request.POST["Username"]
         password = request.POST["Password"]
