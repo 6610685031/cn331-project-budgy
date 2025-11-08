@@ -1,5 +1,5 @@
-#import json
-#import requests
+# import json
+# import requests
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_date
@@ -41,6 +41,7 @@ def dashboard_today_page(request, user_id):
 
     # ส่ง context เข้า render
     return render(request, "home/test.html", context)
+
 
 @login_required
 def spending_api(request):
@@ -102,18 +103,21 @@ def category_list(request, user_id):
     if request.method == "POST":
         # Add Category
         category_name = request.POST.get("category_name")
+        trans_type = request.POST.get("trans_type")
+
         if category_name:
             # Avoid duplicate categories
             Category.objects.get_or_create(
-                user=user,
-                category_name=category_name,
-                defaults={"trans_type": "income"},
+                user=user, category_name=category_name, trans_type=trans_type
             )
 
         # Delete Category
         delete_name = request.POST.get("delete_category_name")
+
         if delete_name:
-            Category.objects.filter(user=user, category_name=delete_name).delete()
+            Category.objects.filter(
+                user=user, category_name=delete_name, trans_type=trans_type
+            ).delete()
 
         return redirect(
             request.META.get("HTTP_REFERER") or "category_list", user_id=request.user.id
@@ -121,7 +125,7 @@ def category_list(request, user_id):
 
     else:
         # GET Request: Fetch all categories for the user
-        categories = Category.objects.filter(user=user)
+        categories = Category.objects.filter(user=user, trans_type=trans_type)
         return render(
             request,
             "home/category_list.html",
@@ -136,6 +140,9 @@ def transaction_income_page(request, user_id):
     transaction_type = "income"
 
     if request.method == "POST":
+        if "date" not in request.POST:
+            category_list(request, user_id)
+        else:
             date = request.POST["date"]
             amount = request.POST["amount"]
             name_category = request.POST["category_name"]
@@ -171,11 +178,13 @@ def transaction_income_page(request, user_id):
             account.balance += float(amount)
             account.save()
 
-            return redirect(
-                reverse("transaction_income", kwargs={"user_id": request.user.id})
-            )
+        return redirect(
+            reverse("transaction_income", kwargs={"user_id": request.user.id})
+        )
 
-    return render(request, "home/transaction_income.html")
+    categories = Category.objects.filter(user=request.user, trans_type=transaction_type)
+
+    return render(request, "home/transaction_income.html", {"categories": categories})
 
 
 @login_required(login_url="/login/")
@@ -190,9 +199,7 @@ def transaction_expense_page(request, user_id):
         delete_name = request.POST.get("delete_category_name")
         if delete_name:
             Category.objects.filter(
-                user=user_now,
-                category_name=delete_name,
-                trans_type=transaction_type
+                user=user_now, category_name=delete_name, trans_type=transaction_type
             ).delete()
 
         # ---- เพิ่ม Category ----
@@ -200,9 +207,7 @@ def transaction_expense_page(request, user_id):
         date_str = request.POST.get("date")
         if add_cat_name and not date_str:
             Category.objects.create(
-                user=user_now,
-                category_name=add_cat_name,
-                trans_type=transaction_type
+                user=user_now, category_name=add_cat_name, trans_type=transaction_type
             )
 
         # ---- เพิ่ม Transaction Expense ----
@@ -216,13 +221,9 @@ def transaction_expense_page(request, user_id):
 
             # fetch category or create if not exist
             category = Category.objects.filter(
-                user=user_now,
-                category_name=name_category,
-                trans_type=transaction_type
+                user=user_now, category_name=name_category, trans_type=transaction_type
             ).first() or Category.objects.create(
-                user=user_now,
-                category_name=name_category,
-                trans_type=transaction_type
+                user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
             # fetch account
@@ -245,7 +246,9 @@ def transaction_expense_page(request, user_id):
         # redirect หลัง POST
         return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
 
-    return render(request, "home/transaction_expense.html")
+    categories = Category.objects.filter(user=request.user, trans_type=transaction_type)
+
+    return render(request, "home/transaction_expense.html", {"categories": categories})
 
 
 @login_required(login_url="/login/")
@@ -255,31 +258,45 @@ def transaction_transfer_page(request, user_id):
     transaction_type = "transfer"
 
     if request.method == "POST":
+        if "date" not in request.POST:
+            category_list(request, user_id)
+        else:
             date = request.POST["date"]
+
             amount = request.POST["amount"]
+
             name_category = request.POST["category_name"]
+
             from_account = request.POST["from_account"]
+
             to_account = request.POST["to_account"]
 
             # fetch category from database by user, category_name and type
+
             category_check = Category.objects.filter(
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
             from_account = Account.objects.get(user=user_now, account_name=from_account)
+
             to_account = Account.objects.get(user=user_now, account_name=to_account)
 
             # Check if this category exist
+
             if not category_check.exists():
+
                 category = Category.objects.create(
                     user=user_now,
                     category_name=name_category,
                     trans_type=transaction_type,
                 )
+
             else:
+
                 category = category_check.first()
 
             # create transaction income model
+
             expense = Expense.objects.create(
                 user=user_now,
                 trans_type=transaction_type,
@@ -299,17 +316,20 @@ def transaction_transfer_page(request, user_id):
             )
 
             from_account.balance -= float(amount)
+
             from_account.save()
 
             to_account.balance += float(amount)
+
             to_account.save()
 
             return redirect(
                 reverse("transaction_transfer", kwargs={"user_id": request.user.id})
             )
 
+    categories = Category.objects.filter(user=request.user, trans_type=transaction_type)
 
-    return render(request, "home/transaction_transfer.html")
+    return render(request, "home/transaction_transfer.html", {"categories": categories})
 
 
 @login_required(login_url="/login/")
