@@ -327,7 +327,7 @@
                     <a href="{% url 'transaction_expense' request.user.id %}"><button class="tab-button active">Expense</button></a>
                     <a href="{% url 'transaction_transfer' request.user.id %}"><button class="tab-button">Transfer</button></a>
                 </div>
-                <form class="transaction-form", action="{% url 'transaction_income' user_id=request.user.id %}" method="post" >
+                <form class="transaction-form", action="{% url 'transaction_expense' user_id=request.user.id %}" method="post" >
                     <div class="form-group">
                         <label for="date">Date</label>
                         <input type="date" id="date_input" name="date" class="form-control" required>

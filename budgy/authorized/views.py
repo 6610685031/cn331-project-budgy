@@ -61,6 +61,7 @@ def register(request):
         password_again = request.POST["confirm_password"]
 
         if password != password_again:
+            messages.error(request, "Password not match, Please try again.")
             return render(
                 request,
                 "authorized/register.html",
@@ -68,6 +69,7 @@ def register(request):
             )
 
         if User.objects.filter(username=username).exists():
+            messages.error(request, "This Username already registry, Please try again.")
             return render(
                 request,
                 "authorized/register.html",
@@ -82,6 +84,7 @@ def register(request):
             user=user, account_name="Cash", type_acc="cash", balance=0.0
         )
 
+        messages.success(request, "Register success")
         return render(
             request,
             "authorized/login.html",
