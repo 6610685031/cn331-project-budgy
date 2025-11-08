@@ -8,8 +8,15 @@ from django.contrib.auth.models import User
 # Category Model
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category_name = models.CharField(max_length=100, primary_key=True)
+    category_name = models.CharField(max_length=100)
     trans_type = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["trans_type", "category_name"], name="unique_type_category"
+            )
+        ]
 
     def __str__(self):
         return f"{self.category_name}"
@@ -34,6 +41,13 @@ class Account(models.Model):
     account_name = models.CharField(max_length=100)
     type_acc = models.CharField(max_length=50)
     balance = models.FloatField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "account_name"], name="unique_user_account"
+            )
+        ]
 
     def __str__(self):
         return self.account_name

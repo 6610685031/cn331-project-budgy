@@ -23,5 +23,7 @@ urlpatterns = [
     path("<int:user_id>/stats/", views.stats_page, name="stats"),
     path("<int:user_id>/settings/", views.settings_page, name="settings"),
     path("<int:user_id>/edit/category/", views.category_list, name="category_list"),
+    path("api/spending/", views.spending_api, name="spending_api"),
+    path("api/accounts/", views.accounts_api, name="accounts_api"),
     re_path(r"^([a-zA-Z]+)/$", views.landing_page, name="landing"),
 ]

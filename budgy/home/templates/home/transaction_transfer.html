@@ -5,7 +5,6 @@
 
 {% block body %}
     <script>
-
         // function for fill today date as initial in date field
         window.onload = function() {
             const dateInput = document.getElementById('date_input');
@@ -29,12 +28,10 @@
             // take category to field
             categoryItems.forEach(item => {
                 item.addEventListener('click', function() {
-                    const categoryName = item.firstChild.textContent.trim();
-                    categoryInput.value = categoryName; // ตั้งค่า value ของช่อง input
+                    categoryInput.value = item.textContent; // ตั้งค่า value ของช่อง input
                 });
             });
         });
-
 
         // Function to toggle the visibility of the 'Add/Delete Category' 
         function toggleEditMode() {
@@ -326,9 +323,9 @@
         <main class="main-content">
             <div class="transaction-form-container">
                 <div class="tabs">
-                    <a href="{% url 'transaction_income' request.user.id %}"><button class="tab-button active">Income</button></a>
+                    <a href="{% url 'transaction_income' request.user.id %}"><button class="tab-button">Income</button></a>
                     <a href="{% url 'transaction_expense' request.user.id %}"><button class="tab-button">Expense</button></a>
-                    <a href="{% url 'transaction_transfer' request.user.id %}"><button class="tab-button">Transfer</button></a>
+                    <a href="{% url 'transaction_transfer' request.user.id %}"><button class="tab-button active">Transfer</button></a>
                 </div>
                 <form class="transaction-form", action="{% url 'transaction_income' user_id=request.user.id %}" method="post" >
                     <div class="form-group">
@@ -344,8 +341,12 @@
                         <input type="text" id="category_input" name="category_name" class="form-control" placeholder="Enter category" required>
                     </div>
                     <div class="form-group">
-                        <label for="account">Account</label>
-                        <input type="text" name="account" class="form-control" placeholder="Enter account" required>
+                        <label for="from_account">From</label>
+                        <input type="text" name="from_account" class="form-control" placeholder="Enter account" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="to_account">To</label>
+                        <input type="text" name="to_account" class="form-control" placeholder="Enter account" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="save-button">Save</button>
@@ -353,24 +354,6 @@
                 </form>
             </div>
         </main>
-
-        <!-- Right Sidebar -->
-        <!-- <aside class="right-sidebar">
-            <div class="category-container">
-                <div class="category-header">
-                    <h3>Category</h3>
-                    <button class="edit-button"><i class="fas fa-edit"></i></button>
-                </div>
-                <ul class="category-list">
-                    <li class="category-item">Allowance</li>
-                    <li class="category-item">Salary</li>
-                    <li class="category-item">Petty Cash</li>
-                    <li class="category-item">Bonus</li>
-                    <li class="category-item">Other</li>
-                    <li class="category-item">Interest</li>
-                </ul>
-            </div>
-        </aside>-->
 
         <aside class="right-sidebar">
             <div class="category-container">
@@ -398,11 +381,12 @@
                     <form method="POST">
                         <input type="text" id="newCategory" name="category_name" placeholder="Add category" required>
                         <button type="submit">Add</button>
-                        <input type="hidden" name="trans_type" value="expense">
+                        <input type="hidden" name="trans_type" value="transfer">
                     </form>
                 </div>
             </div>
         </aside>
+
     </div> 
 
     <!-- Footer -->

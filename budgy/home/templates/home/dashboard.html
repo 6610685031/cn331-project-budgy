@@ -18,6 +18,15 @@
     }
 
     .spending-box { height: 350px; }
+
+    #spending-list, #spending-list th, #spending-list td {
+    border: none; /* ตัดเส้นขอบทั้งหมด */
+    padding: 6px 8px;
+    }
+
+    #spending-list th, #spending-list td {
+        text-align: left; /* ชิดซ้ายทั้งหมด */
+    }
     </style>
     <!-- Dashboard Layout -->
     <div class="container py-5">
@@ -53,12 +62,27 @@
                                max="2100">
                     </div>
                     <!-- Spending List -->
-                    <ul class="list-group"
-                        id="spending-list"
-                        style="max-height: 300px;
-                               overflow-y: auto">
-                        <li class="list-group-item text-muted text-center">Select a date to view spending...</li>
-                    </ul>
+                    <table id="spending-list" style="width:100%; border-collapse: collapse; table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Category</th>
+                                <th style="text-align: left;">Income (฿)</th>
+                                <th style="text-align: left;">Expense (฿)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" style="text-align:center; color: #888;">Select a date to view spending...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th style="text-align: left;">Total</th>
+                                <th id="total-income" style="text-align: left;">0</th>
+                                <th id="total-expense" style="text-align: left;">0</th>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
             <!-- Right Column -->
@@ -70,44 +94,111 @@
                 </div>
                 <!-- Bottom-right: Account Balance -->
                 <div class="box">
-                    <h5>Account Balance</h5>
-                    <h2 style="color:#0077b6;">฿ 25,500.00</h2>
+                    <h5>Accounts</h5>
+                    <div id="account-box">
+                        <p class="text-muted">Loading accounts...</p>
+                    </div>
+                    <hr>
+                    <h5>Total Balance</h5>
+                    <h2 id="total-balance" style="color:#0077b6;">฿ 0.00</h2>
                 </div>
             </div>
         </div>
     </div>
     <script>
-        function renderList(spendings, mode) {
-          const list = document.getElementById("spending-list");
-          list.innerHTML = "";
+        // function renderList(spendings, mode) {
+        //   const list = document.getElementById("spending-list");
+        //   list.innerHTML = "";
         
-          if (spendings.length === 0) {
-            list.innerHTML = `<li class="list-group-item text-center text-muted">No records found.</li>`;
-            return;
-          }
+        //   if (spendings.length === 0) {
+        //     list.innerHTML = `<li class="list-group-item text-center text-muted">No records found.</li>`;
+        //     return;
+        //   }
       
-          spendings.forEach(item => {
-            let label = mode === "daily" ? item.time : item.date;
-            list.innerHTML += `
-              <li class="list-group-item d-flex justify-content-between">
-                <span>${label} — ${item.category || "Uncategorized"}</span>
-                <strong>฿ ${item.amount}</strong>
-              </li>`;
-          });
-        }
+        //   spendings.forEach(item => {
+        //     let label = mode === "daily" ? item.time : item.date;
+        //     list.innerHTML += `
+        //       <li class="list-group-item d-flex justify-content-between">
+        //         <span>${item.category || "Uncategorized"}</span>
+        //         <strong>฿ ${item.amount}</strong>
+        //       </li>`;
+        //   });
+        // }
         
+        function renderList(spendings) {
+            const tbody = document.querySelector("#spending-list tbody");
+            tbody.innerHTML = "";
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            if (spendings.length === 0) {
+                tbody.innerHTML = `<tr><td class="text-center text-muted" colspan="3">No records found.</td></tr>`;
+            } else {
+                spendings.forEach(item => {
+                    let income = item.type === "income" ? item.amount.toFixed(2) : "";
+                    let expense = item.type === "expense" ? item.amount.toFixed(2) : "";
+
+                    if (item.type === "income") totalIncome += item.amount;
+                    if (item.type === "expense") totalExpense += item.amount;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.category || "Uncategorized"}</td>
+                            <td>${income}</td>
+                            <td>${expense}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById("total-income").textContent = totalIncome.toFixed(2);
+            document.getElementById("total-expense").textContent = totalExpense.toFixed(2);
+        }
         async function fetchSpending(mode, value) {
-          const params = new URLSearchParams({ mode: mode });
-        
-          if (mode === "daily") params.append("date", value);
-          if (mode === "monthly") params.append("month", value);
-          if (mode === "yearly") params.append("year", value);
-        
-          const response = await fetch(`/api/spending/?${params.toString()}`);
-          const data = await response.json();
-          renderList(data.spendings, mode);
+            const params = new URLSearchParams({ mode: mode });
+
+            if (mode === "daily") params.append("date", value);   // YYYY-MM-DD
+            if (mode === "monthly") params.append("month", value); // YYYY-MM
+            if (mode === "yearly") params.append("year", value);   // YYYY
+
+            const response = await fetch(`/api/spending/?${params.toString()}`);
+            const data = await response.json();
+
+            renderList(data.spendings); // render แบบ Income / Expense
         }
-        
+
+            // 🟢 ดึงข้อมูลบัญชี 3 รายการ + ยอดรวมทั้งหมด
+        async function fetchAccounts() {
+            const response = await fetch("/api/accounts/");
+            const data = await response.json();
+
+            const box = document.querySelector("#account-box");
+            box.innerHTML = "";
+
+            if (data.accounts.length === 0) {
+                box.innerHTML = `<p class="text-muted">No accounts found.</p>`;
+            } else {
+                data.accounts.forEach(acc => {
+                box.innerHTML += `<p>${acc.name}: <strong>฿ ${acc.balance.toFixed(2)}</strong></p>`;
+                });
+            }
+
+            // total balance
+            document.getElementById("total-balance").textContent = `฿ ${data.total_balance.toFixed(2)}`;
+            }
+
+            // โหลดข้อมูลบัญชีเมื่อเปิดหน้า
+            document.addEventListener("DOMContentLoaded", fetchAccounts);
+
+            // Event listeners เหมือนเดิม
+            document.getElementById("btn-daily").onclick = () => setMode("daily");
+            document.getElementById("btn-monthly").onclick = () => setMode("monthly");
+            document.getElementById("btn-yearly").onclick = () => setMode("yearly");
+            document.getElementById("daily-picker").onchange = (e) => fetchSpending("daily", e.target.value);
+            document.getElementById("monthly-picker").onchange = (e) => fetchSpending("monthly", e.target.value);
+            document.getElementById("yearly-picker").onchange = (e) => fetchSpending("yearly", e.target.value);
+
         // Mode switching
         function setMode(mode) {
           document.getElementById("daily-picker").classList.toggle("d-none", mode !== "daily");
@@ -123,9 +214,14 @@
         document.getElementById("btn-daily").onclick = () => setMode("daily");
         document.getElementById("btn-monthly").onclick = () => setMode("monthly");
         document.getElementById("btn-yearly").onclick = () => setMode("yearly");
-        
+
+        // Daily
         document.getElementById("daily-picker").onchange = (e) => fetchSpending("daily", e.target.value);
+
+        // Monthly (รูปแบบ input[type=month] เป็น YYYY-MM)
         document.getElementById("monthly-picker").onchange = (e) => fetchSpending("monthly", e.target.value);
+
+        // Yearly (input[type=number])
         document.getElementById("yearly-picker").onchange = (e) => fetchSpending("yearly", e.target.value);
-    </script>
+            </script>
 {% endblock body %}

@@ -21,10 +21,6 @@
   <!-- Content -->
   <div class="d-flex flex-column align-items-center justify-content-center"
        style="height:80vh">
-    <h1 class="mb-4">Welcome back! 👋</h1>
-    <div class="balance-box">
-      <h3>Your Current Balance</h3>
-      <h1 style="font-weight:700; color:#0077b6;">฿ 25,500.00</h1>
-    </div>
+    <h1 class="mb-4">Welcome back! {{ request.user.username }}👋</h1>
   </div>
 {% endblock body %}
