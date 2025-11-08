@@ -225,7 +225,7 @@ class HomeAppTests(TestCase):
         self.assertFalse(Category.objects.filter(user=self.user, category_name="TempCat").exists())
 
     def test_landing_redirects_non_root_path(self):
-        # สมมติ path อื่น เช่น "/foo/"
+        # สมมุติ path อื่น
         response = self.client.get("/foo/")
         expected_url = f"/{self.user.id}/foo/"
         self.assertEqual(response.status_code, 302)
