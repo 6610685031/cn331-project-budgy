@@ -19,7 +19,6 @@ class Category(models.Model):
         ]
 
 
-
 # Month Report Model
 class MonthReport(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -28,8 +27,6 @@ class MonthReport(models.Model):
     year = models.IntegerField()
     income_total = models.FloatField()
     expense_total = models.FloatField()
-
-
 
 
 # Account Model
@@ -47,8 +44,6 @@ class Account(models.Model):
         ]
 
 
-
-
 # Transaction Model
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -56,8 +51,7 @@ class Transaction(models.Model):
     trans_type = models.CharField(max_length=50)
     date = models.DateTimeField()
     amount = models.FloatField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-
+    category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
 
 
 # Transaction Income model
