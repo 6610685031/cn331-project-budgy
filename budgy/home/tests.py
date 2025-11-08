@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from .models import Category, Account, Income, Expense
 from django.utils.dateparse import parse_date
 
+
 class HomeAppTests(TestCase):
     def setUp(self):
         # สร้าง user และ login
@@ -42,7 +43,9 @@ class HomeAppTests(TestCase):
 
     # ----- Dashboard -----
     def test_dashboard_context(self):
-        response = self.client.get(reverse("dashboard", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse("dashboard", kwargs={"user_id": self.user.id})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn("categories", response.context)
         self.assertIn("accounts", response.context)
@@ -112,24 +115,58 @@ class HomeAppTests(TestCase):
                 "to_account": "Bank",
             },
         )
-        self.assertTrue(Category.objects.filter(user=self.user, category_name="NewTransferCat").exists())
-
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name="NewTransferCat"
+            ).exists()
+        )
 
     # ----- Category List -----
-    def test_category_add_delete(self):
+    def test_category_add_delete_income(self):
         # เพิ่ม category
         response = self.client.post(
             reverse("category_list", kwargs={"user_id": self.user.id}),
-            data={"category_name": "NewCat"},
+            data={"category_name": "NewCat", "trans_type": "income"},
         )
-        self.assertTrue(Category.objects.filter(user=self.user, category_name="NewCat").exists())
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name="NewCat", trans_type="income"
+            ).exists()
+        )
 
         # ลบ category
         response = self.client.post(
             reverse("category_list", kwargs={"user_id": self.user.id}),
-            data={"delete_category_name": "NewCat"},
+            data={"delete_category_name": "NewCat", "trans_type": "income"},
         )
-        self.assertFalse(Category.objects.filter(user=self.user, category_name="NewCat").exists())
+        self.assertFalse(
+            Category.objects.filter(
+                user=self.user, category_name="NewCat", trans_type="income"
+            ).exists()
+        )
+
+    def test_category_add_delete_expense(self):
+        # เพิ่ม category
+        response = self.client.post(
+            reverse("category_list", kwargs={"user_id": self.user.id}),
+            data={"category_name": "NewCat", "trans_type": "expense"},
+        )
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name="NewCat", trans_type="expense"
+            ).exists()
+        )
+
+        # ลบ category
+        response = self.client.post(
+            reverse("category_list", kwargs={"user_id": self.user.id}),
+            data={"delete_category_name": "NewCat", "trans_type": "expense"},
+        )
+        self.assertFalse(
+            Category.objects.filter(
+                user=self.user, category_name="NewCat", trans_type="expense"
+            ).exists()
+        )
 
     # ----- Stats Page -----
     def test_stats_page_loads(self):
@@ -139,9 +176,17 @@ class HomeAppTests(TestCase):
 
     # ----- Settings Page -----
     def test_settings_page_loads(self):
-        response = self.client.get(reverse("settings", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse("settings", kwargs={"user_id": self.user.id})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/settings.html")
+
+    # ----- Contact Page -----
+    def test_contact_page_loads(self):
+        response = self.client.get(reverse("contact"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "home/contact.html")
 
     # ----- Spending API -----
     def test_spending_api_daily(self):
@@ -150,10 +195,12 @@ class HomeAppTests(TestCase):
             trans_type="income",
             date="2025-11-08",
             amount=500,
-            category=self.cat_income,
+            category_trans=self.cat_income,
             to_account=self.account,
         )
-        response = self.client.get(reverse("spending_api") + "?mode=daily&date=2025-11-08")
+        response = self.client.get(
+            reverse("spending_api") + "?mode=daily&date=2025-11-08"
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data["spendings"]), 1)
@@ -164,24 +211,32 @@ class HomeAppTests(TestCase):
         response = self.client.get(reverse("accounts_api"))
         self.assertEqual(response.status_code, 200)  # เปลี่ยนจาก 302 เป็น 200
         data = response.json()
-        self.assertEqual(data["total_balance"], self.account.balance + self.account2.balance)
+        self.assertEqual(
+            data["total_balance"], self.account.balance + self.account2.balance
+        )
         self.assertEqual(len(data["accounts"]), 2)
         self.assertEqual(data["accounts"][0]["name"], "Bank")  # เรียง id desc
-
 
     # ----- Transaction Expense: test branch add category only (no date) -----
     def test_transaction_expense_add_category_only(self):
         response = self.client.post(
             reverse("transaction_expense", kwargs={"user_id": self.user.id}),
-            data={"category_name": "NewExpenseCat"}
+            data={"category_name": "NewExpenseCat"},
         )
         self.assertTrue(
-            Category.objects.filter(user=self.user, category_name="NewExpenseCat", trans_type="expense").exists()
+            Category.objects.filter(
+                user=self.user, category_name="NewExpenseCat", trans_type="expense"
+            ).exists()
         )
 
     # ----- Category List: test GET request -----
     def test_category_list_get(self):
-        response = self.client.get(reverse("category_list", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse(
+                "category_list",
+                kwargs={"user_id": self.user.id},
+            )
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/category_list.html")
         self.assertIn("categories", response.context)
@@ -194,10 +249,12 @@ class HomeAppTests(TestCase):
             trans_type="income",
             date="2025-11-08",
             amount=500,
-            category=self.cat_income,
+            category_trans=self.cat_income,
             to_account=self.account,
         )
-        response = self.client.get(reverse("spending_api") + "?mode=monthly&month=2025-11")
+        response = self.client.get(
+            reverse("spending_api") + "?mode=monthly&month=2025-11"
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertGreaterEqual(len(data["spendings"]), 1)
@@ -208,7 +265,7 @@ class HomeAppTests(TestCase):
             trans_type="income",
             date="2025-11-08",
             amount=500,
-            category=self.cat_income,
+            category_trans=self.cat_income,
             to_account=self.account,
         )
         response = self.client.get(reverse("spending_api") + "?mode=yearly&year=2025")
@@ -217,12 +274,16 @@ class HomeAppTests(TestCase):
         self.assertGreaterEqual(len(data["spendings"]), 1)
 
     def test_transaction_expense_delete_category(self):
-        Category.objects.create(user=self.user, category_name="TempCat", trans_type="expense")
+        Category.objects.create(
+            user=self.user, category_name="TempCat", trans_type="expense"
+        )
         response = self.client.post(
             reverse("transaction_expense", kwargs={"user_id": self.user.id}),
-            data={"delete_category_name": "TempCat"}
+            data={"delete_category_name": "TempCat"},
         )
-        self.assertFalse(Category.objects.filter(user=self.user, category_name="TempCat").exists())
+        self.assertFalse(
+            Category.objects.filter(user=self.user, category_name="TempCat").exists()
+        )
 
     def test_landing_redirects_non_root_path(self):
         # สมมุติ path อื่น
@@ -230,7 +291,6 @@ class HomeAppTests(TestCase):
         expected_url = f"/{self.user.id}/foo/"
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, expected_url)
-
 
     def test_transaction_income_creates_new_category(self):
         # category ที่ส่งยังไม่มีอยู่
@@ -246,13 +306,22 @@ class HomeAppTests(TestCase):
         )
         # ตรวจสอบว่า redirect ถูกต้อง
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("transaction_income", kwargs={"user_id": self.user.id}), response.url)
+        self.assertIn(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
 
         # ตรวจสอบว่า category ถูกสร้าง
-        self.assertTrue(Category.objects.filter(user=self.user, category_name=category_name, trans_type="income").exists())
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name=category_name, trans_type="income"
+            ).exists()
+        )
 
         # ตรวจสอบว่า income ถูกสร้าง
-        income = Income.objects.filter(user=self.user, amount=500, category__category_name=category_name).first()
+        income = Income.objects.filter(
+            user=self.user, amount=500, category_trans=category_name
+        ).first()
         self.assertIsNotNone(income)
 
         # ตรวจสอบว่า account balance เพิ่มขึ้น
@@ -261,18 +330,24 @@ class HomeAppTests(TestCase):
 
     def test_transaction_income_page_get(self):
         """GET request จะเข้า return render ของ transaction_income_page"""
-        response = self.client.get(reverse("transaction_income", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse("transaction_income", kwargs={"user_id": self.user.id})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/transaction_income.html")
 
     def test_transaction_expense_page_get(self):
         """GET request จะเข้า return render ของ transaction_expense_page"""
-        response = self.client.get(reverse("transaction_expense", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/transaction_expense.html")
 
     def test_transaction_transfer_page_get(self):
         """GET request จะเข้า return render ของ transaction_transfer_page"""
-        response = self.client.get(reverse("transaction_transfer", kwargs={"user_id": self.user.id}))
+        response = self.client.get(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id})
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/transaction_transfer.html")
