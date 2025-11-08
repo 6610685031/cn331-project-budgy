@@ -67,7 +67,7 @@ def spending_api(request):
     # แปลงเป็น list JSON
     data = [
         {
-            "category": t.category.category_name if t.category else "Uncategorized",
+            "category": t.category_trans,
             "amount": t.amount,
             "type": t.trans_type,
         }
@@ -171,7 +171,7 @@ def transaction_income_page(request, user_id):
                 trans_type=transaction_type,
                 date=date,
                 amount=amount,
-                category=category,
+                category_trans=name_category,
                 to_account=account,
             )
 
@@ -235,7 +235,7 @@ def transaction_expense_page(request, user_id):
                 trans_type=transaction_type,
                 date=date,
                 amount=amount,
-                category=category,
+                category_trans=name_category,
                 from_account=account,
             )
 
@@ -262,13 +262,9 @@ def transaction_transfer_page(request, user_id):
             category_list(request, user_id)
         else:
             date = request.POST["date"]
-
             amount = request.POST["amount"]
-
             name_category = request.POST["category_name"]
-
             from_account = request.POST["from_account"]
-
             to_account = request.POST["to_account"]
 
             # fetch category from database by user, category_name and type
@@ -276,33 +272,26 @@ def transaction_transfer_page(request, user_id):
             category_check = Category.objects.filter(
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
-
             from_account = Account.objects.get(user=user_now, account_name=from_account)
-
             to_account = Account.objects.get(user=user_now, account_name=to_account)
 
             # Check if this category exist
-
             if not category_check.exists():
-
                 category = Category.objects.create(
                     user=user_now,
                     category_name=name_category,
                     trans_type=transaction_type,
                 )
-
             else:
-
                 category = category_check.first()
 
             # create transaction income model
-
             expense = Expense.objects.create(
                 user=user_now,
                 trans_type="expense",
                 date=date,
                 amount=amount,
-                category=category,
+                category_trans=name_category,
                 from_account=from_account,
             )
 
@@ -311,17 +300,18 @@ def transaction_transfer_page(request, user_id):
                 trans_type="income",
                 date=date,
                 amount=amount,
-                category=category,
+                category_trans=name_category,
                 to_account=to_account,
             )
 
-            from_account.balance -= float(amount)
+            if from_account != to_account:
+                from_account.balance -= float(amount)
 
-            from_account.save()
+                from_account.save()
 
-            to_account.balance += float(amount)
+                to_account.balance += float(amount)
 
-            to_account.save()
+                to_account.save()
 
             return redirect(
                 reverse("transaction_transfer", kwargs={"user_id": request.user.id})

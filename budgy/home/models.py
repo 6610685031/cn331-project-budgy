@@ -51,7 +51,8 @@ class Transaction(models.Model):
     trans_type = models.CharField(max_length=50)
     date = models.DateTimeField()
     amount = models.FloatField()
-    category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
+    # category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
+    category_trans = models.CharField(max_length=100)
 
 
 # Transaction Income model
