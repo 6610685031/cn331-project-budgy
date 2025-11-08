@@ -1,1 +1,192 @@
-<h1>Stats Page</h1>
+{% extends "home/layout.html" %}
+{% block title %}
+    Stats
+{% endblock title %}
+{% block body %}
+    <style>
+    :root {
+      --primary-bg-color: #E3F2FD;
+      --sidebar-bg-color: #64B5F6;
+      --main-content-bg-color: #FFFFFF;
+      --active-link-bg-color: #FFFFFF;
+      --active-link-text-color: #1E88E5;
+      --text-color: #333;
+      --button-bg-color: #69F0AE;
+      --button-text-color: #FFFFFF;
+      --border-radius-lg: 25px;
+      --border-radius-md: 15px;
+    }
+    body {
+      font-family: "Chakra Petch", sans-serif;
+      background: linear-gradient(135deg, #c9f9ff, #87ceeb);
+      min-height: 100vh;
+    }
+    .balance-box {
+      background: white;
+      padding: 35px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 420px;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+        background-color: var(--sidebar-bg-color);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 200px;
+    }
+
+    .sidebar-header .profile-icon {
+        width: 80px;
+        height: 80px;
+        background-color: var(--active-link-bg-color);
+        border-radius: 50%;
+        margin-bottom: 30px;
+    }
+
+    .sidebar-nav ul {
+        list-style: none;
+        width: 100%;
+    }
+
+    .sidebar-nav li {
+        margin: 20px 0;
+    }
+
+    .sidebar-nav li a {
+        text-decoration: none;
+        color: var(--active-link-bg-color);
+        display: block;
+        padding: 10px 20px;
+        border-radius: var(--border-radius-md);
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .sidebar-nav li.active a {
+        background-color: var(--active-link-bg-color);
+        color: var(--active-link-text-color);
+    }
+
+    .sidebar-footer {
+        margin-top: auto;
+    }
+
+    .sidebar-footer .logout-icon {
+        width: 50px;
+        height: 50px;
+        background-color: var(--active-link-bg-color);
+        border-radius: 50%;
+    }
+
+    /* Main Content */
+    .app-container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+    }
+
+    .main-content {
+        flex: 0.7;
+    }
+
+    .form-container {
+        background-color: #FFFF;
+        border-radius: 25px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+
+    /* footer for contact and other link */
+    .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 40px;
+        font-size: 14px;
+    }
+
+    .footer-social {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .footer-social span {
+        font-weight: 500;
+    }
+
+    .footer-social i {
+        font-size: 24px;
+        color: #424242;
+    }
+
+    .footer-links a {
+        text-decoration: none;
+        color: #424242;
+        margin-left: 20px;
+    }
+
+    </style>
+    <!-- Content -->
+    <div class="app-container">
+        <!-- side bar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="profile-icon"></div>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="{% url 'home' request.user.id %}">HOME</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'dashboard' request.user.id %}">Dashboard</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'transaction_income' request.user.id %}">Transaction</a>
+                    </li>
+                    <li class="active">
+                        <a href="{% url 'stats' request.user.id %}">Stats</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings' request.user.id %}">Settings</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="logout-icon"></div>
+            </div>
+        </aside>
+        <!-- Hello and initial brief about financial -->
+        <main class="main-content">
+            <div class="form-container">
+                <div class="d-flex flex-column align-items-center justify-content-center"
+                     style="height:80vh">
+                    <h1 class="mb-4">This is stats page</h1>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- Contact and other -->
+    <footer class="footer">
+        <div class="footer-social">
+            <span><a href="{% url 'contact' %}">Contact Us</span>
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-line"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="far fa-envelope"></i></a>
+        </div>
+        <div class="footer-links">
+            <a href="#">Term of Use</a>
+            <a href="#">Privacy Policy</a>
+        </div>
+    </footer>
+{% endblock body %}

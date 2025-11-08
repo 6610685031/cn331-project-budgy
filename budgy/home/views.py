@@ -330,3 +330,7 @@ def stats_page(request, user_id):
 @login_required(login_url="/login/")
 def settings_page(request, user_id):
     return render(request, "home/settings.html")
+
+
+def contact(request, user_id):
+    return render(request, "home/contact.html")
