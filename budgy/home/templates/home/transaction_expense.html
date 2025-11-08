@@ -27,7 +27,8 @@
             // take category to field
             categoryItems.forEach(item => {
                 item.addEventListener('click', function() {
-                    categoryInput.value = item.textContent; // ตั้งค่า value ของช่อง input
+                    const categoryName = item.firstChild.textContent.trim();
+                    categoryInput.value = categoryName; // ตั้งค่า value ของช่อง input
                 });
             });
         });

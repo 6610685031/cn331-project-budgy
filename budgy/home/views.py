@@ -299,7 +299,7 @@ def transaction_transfer_page(request, user_id):
 
             expense = Expense.objects.create(
                 user=user_now,
-                trans_type=transaction_type,
+                trans_type="expense",
                 date=date,
                 amount=amount,
                 category=category,
@@ -308,7 +308,7 @@ def transaction_transfer_page(request, user_id):
 
             income = Income.objects.create(
                 user=user_now,
-                trans_type=transaction_type,
+                trans_type="income",
                 date=date,
                 amount=amount,
                 category=category,
