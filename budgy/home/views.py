@@ -28,6 +28,16 @@ def home_page(request, user_id):
 
 @login_required(login_url="/login/")
 def dashboard_today_page(request, user_id):
+    user = request.user
+    categories = Category.objects.filter(user=user)
+    accounts = Account.objects.filter(user=user).order_by("-id")  # ตัวอย่างเรียงล่าสุด
+    total_balance = sum(a.balance for a in accounts)
+
+    context = {
+        "categories": categories,
+        "accounts": accounts,
+        "total_balance": total_balance,
+    }
 
     return render(request, "home/test.html")
 
@@ -82,6 +92,7 @@ def accounts_api(request):
     total_balance = sum(acc.balance for acc in Account.objects.filter(user=user))
 
     return JsonResponse({"accounts": data, "total_balance": total_balance})
+
 
 @login_required(login_url="/login/")
 @csrf_exempt
