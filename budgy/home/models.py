@@ -18,8 +18,6 @@ class Category(models.Model):
             )
         ]
 
-    def __str__(self):
-        return f"{self.category_name}"
 
 
 # Month Report Model
@@ -31,8 +29,7 @@ class MonthReport(models.Model):
     income_total = models.FloatField()
     expense_total = models.FloatField()
 
-    def __str__(self):
-        return f"Report for {self.month}/{self.year}"
+
 
 
 # Account Model
@@ -49,8 +46,7 @@ class Account(models.Model):
             )
         ]
 
-    def __str__(self):
-        return self.account_name
+
 
 
 # Transaction Model
@@ -62,8 +58,6 @@ class Transaction(models.Model):
     amount = models.FloatField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return f"Date: {self.date.day}/{self.date.month}/{self.date.year} amount:{self.amount}"
 
 
 # Transaction Income model
