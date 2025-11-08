@@ -125,7 +125,7 @@ def category_list(request, user_id):
 
     else:
         # GET Request: Fetch all categories for the user
-        categories = Category.objects.filter(user=user, trans_type=trans_type)
+        categories = Category.objects.filter(user=user)
         return render(
             request,
             "home/category_list.html",
@@ -140,9 +140,23 @@ def transaction_income_page(request, user_id):
     transaction_type = "income"
 
     if request.method == "POST":
-        if "date" not in request.POST:
-            category_list(request, user_id)
-        else:
+        # ---- ลบ Category ----
+        delete_name = request.POST.get("delete_category_name")
+        if delete_name:
+            Category.objects.filter(
+                user=user_now, category_name=delete_name, trans_type=transaction_type
+            ).delete()
+
+        # ---- เพิ่ม Category ----
+        add_cat_name = request.POST.get("category_name")
+        date_str = request.POST.get("date")
+        if add_cat_name and not date_str:
+            Category.objects.create(
+                user=user_now, category_name=add_cat_name, trans_type=transaction_type
+            )
+
+        # ---- เพิ่ม Transaction Expense ----
+        elif add_cat_name and date_str:
             date = request.POST["date"]
             amount = request.POST["amount"]
             name_category = request.POST["category_name"]
@@ -258,9 +272,23 @@ def transaction_transfer_page(request, user_id):
     transaction_type = "transfer"
 
     if request.method == "POST":
-        if "date" not in request.POST:
-            category_list(request, user_id)
-        else:
+        # ---- ลบ Category ----
+        delete_name = request.POST.get("delete_category_name")
+        if delete_name:
+            Category.objects.filter(
+                user=user_now, category_name=delete_name, trans_type=transaction_type
+            ).delete()
+
+        # ---- เพิ่ม Category ----
+        add_cat_name = request.POST.get("category_name")
+        date_str = request.POST.get("date")
+        if add_cat_name and not date_str:
+            Category.objects.create(
+                user=user_now, category_name=add_cat_name, trans_type=transaction_type
+            )
+
+        # ---- เพิ่ม Transaction Expense ----
+        elif add_cat_name and date_str:
             date = request.POST["date"]
             amount = request.POST["amount"]
             name_category = request.POST["category_name"]
@@ -332,5 +360,5 @@ def settings_page(request, user_id):
     return render(request, "home/settings.html")
 
 
-def contact(request, user_id):
+def contact(request):
     return render(request, "home/contact.html")

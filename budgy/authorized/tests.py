@@ -1,16 +1,20 @@
 from django.test import TestCase
+
 # authorized/tests.py
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from home.models import Account
 
+
 class AuthorizedViewsTests(TestCase):
     def setUp(self):
         self.client = Client()
         # สร้าง user ตัวอย่าง
         self.user = User.objects.create_user(username="testuser", password="testpass")
-        Account.objects.create(user=self.user, account_name="Cash", type_acc="cash", balance=0.0)
+        Account.objects.create(
+            user=self.user, account_name="Cash", type_acc="cash", balance=0.0
+        )
 
     # -------------------- LOGIN --------------------
     def test_login_page_loads(self):
@@ -24,8 +28,10 @@ class AuthorizedViewsTests(TestCase):
             {"username": "testuser", "password": "testpass"},
             follow=True,
         )
-        self.assertTrue(response.context['user'].is_authenticated)
-        self.assertRedirects(response, reverse("home", kwargs={"user_id": self.user.id}))
+        self.assertTrue(response.context["user"].is_authenticated)
+        self.assertRedirects(
+            response, reverse("home", kwargs={"user_id": self.user.id})
+        )
 
     def test_login_invalid_user(self):
         response = self.client.post(
@@ -33,15 +39,24 @@ class AuthorizedViewsTests(TestCase):
             {"username": "wronguser", "password": "wrongpass"},
             follow=True,
         )
-        self.assertFalse(response.context['user'].is_authenticated)
+        self.assertFalse(response.context["user"].is_authenticated)
         self.assertContains(response, "This user is not registry yet")
+
+    def test_login_already_authenticated(self):
+        # Login ก่อนทดสอบ
+        self.client.login(username="testuser", password="testpass")
+        response = self.client.get(reverse("login"), follow=True)
+        self.assertTrue(response.context["user"].is_authenticated)
+        self.assertRedirects(
+            response, reverse("home", kwargs={"user_id": self.user.id})
+        )
 
     # -------------------- LOGOUT --------------------
     def test_logout_redirects(self):
         # Login ก่อน logout
         self.client.login(username="testuser", password="testpass")
         response = self.client.get(reverse("logout"), follow=True)
-        self.assertFalse(response.context['user'].is_authenticated)
+        self.assertFalse(response.context["user"].is_authenticated)
         self.assertRedirects(response, reverse("login"))
 
     # -------------------- REGISTER --------------------
@@ -63,7 +78,9 @@ class AuthorizedViewsTests(TestCase):
         )
         self.assertTrue(User.objects.filter(username="newuser").exists())
         new_user = User.objects.get(username="newuser")
-        self.assertTrue(Account.objects.filter(user=new_user, account_name="Cash").exists())
+        self.assertTrue(
+            Account.objects.filter(user=new_user, account_name="Cash").exists()
+        )
         self.assertTemplateUsed(response, "authorized/login.html")
         self.assertContains(response, "Register success")
 
@@ -90,4 +107,15 @@ class AuthorizedViewsTests(TestCase):
                 "email": "duplicate@test.com",
             },
         )
-        self.assertContains(response, "This Username already registry, Please try again.")
+        self.assertContains(
+            response, "This Username already registry, Please try again."
+        )
+
+    def test_register_already_authenticated(self):
+        # Login ก่อนทดสอบ
+        self.client.login(username="testuser", password="testpass")
+        response = self.client.get(reverse("register"), follow=True)
+        self.assertTrue(response.context["user"].is_authenticated)
+        self.assertRedirects(
+            response, reverse("home", kwargs={"user_id": self.user.id})
+        )

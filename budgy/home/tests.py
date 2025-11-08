@@ -217,6 +217,18 @@ class HomeAppTests(TestCase):
         self.assertEqual(len(data["accounts"]), 2)
         self.assertEqual(data["accounts"][0]["name"], "Bank")  # เรียง id desc
 
+    # ----- Transaction Income: test branch add category only (no date) -----
+    def test_transaction_income_add_category_only(self):
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={"category_name": "NewIncomeCat"},
+        )
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name="NewIncomeCat", trans_type="income"
+            ).exists()
+        )
+
     # ----- Transaction Expense: test branch add category only (no date) -----
     def test_transaction_expense_add_category_only(self):
         response = self.client.post(
@@ -226,6 +238,18 @@ class HomeAppTests(TestCase):
         self.assertTrue(
             Category.objects.filter(
                 user=self.user, category_name="NewExpenseCat", trans_type="expense"
+            ).exists()
+        )
+
+    # ----- Transaction Transfer: test branch add category only (no date) -----
+    def test_transaction_transfer_add_category_only(self):
+        response = self.client.post(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            data={"category_name": "NewExpenseCat"},
+        )
+        self.assertTrue(
+            Category.objects.filter(
+                user=self.user, category_name="NewExpenseCat", trans_type="transfer"
             ).exists()
         )
 
@@ -273,12 +297,36 @@ class HomeAppTests(TestCase):
         data = response.json()
         self.assertGreaterEqual(len(data["spendings"]), 1)
 
+    def test_transaction_income_delete_category(self):
+        Category.objects.create(
+            user=self.user, category_name="TempCat", trans_type="income"
+        )
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={"delete_category_name": "TempCat"},
+        )
+        self.assertFalse(
+            Category.objects.filter(user=self.user, category_name="TempCat").exists()
+        )
+
     def test_transaction_expense_delete_category(self):
         Category.objects.create(
             user=self.user, category_name="TempCat", trans_type="expense"
         )
         response = self.client.post(
             reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            data={"delete_category_name": "TempCat"},
+        )
+        self.assertFalse(
+            Category.objects.filter(user=self.user, category_name="TempCat").exists()
+        )
+
+    def test_transaction_transfer_delete_category(self):
+        Category.objects.create(
+            user=self.user, category_name="TempCat", trans_type="transfer"
+        )
+        response = self.client.post(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
             data={"delete_category_name": "TempCat"},
         )
         self.assertFalse(
