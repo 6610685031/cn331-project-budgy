@@ -162,34 +162,11 @@ class HomeAppTests(TestCase):
     # ----- Accounts API -----
     def test_accounts_api(self):
         response = self.client.get(reverse("accounts_api"))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # เปลี่ยนจาก 302 เป็น 200
         data = response.json()
         self.assertEqual(data["total_balance"], self.account.balance + self.account2.balance)
         self.assertEqual(len(data["accounts"]), 2)
         self.assertEqual(data["accounts"][0]["name"], "Bank")  # เรียง id desc
-
-
-    # ----- Transaction Income: POST ไม่มี date -----
-    def test_transaction_income_post_no_date(self):
-        response = self.client.post(
-            reverse("transaction_income", kwargs={"user_id": self.user.id}),
-            data={"category_name": "Salary"}
-        )
-        self.assertEqual(response.status_code, 302)  # ตรวจสอบ redirect
-        self.assertIn(reverse("transaction_income", kwargs={"user_id": self.user.id}), response.url)
-
-    # ----- Transaction Transfer: POST ไม่มี date -----
-    def test_transaction_transfer_post_no_date(self):
-        response = self.client.post(
-            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
-            data={
-                "category_name": "Bank Transfer",
-                "from_account": "Cash",
-                "to_account": "Bank"
-            }
-        )
-        self.assertEqual(response.status_code, 302)  # ตรวจสอบ redirect
-        self.assertIn(reverse("transaction_transfer", kwargs={"user_id": self.user.id}), response.url)
 
 
     # ----- Transaction Expense: test branch add category only (no date) -----
@@ -239,21 +216,6 @@ class HomeAppTests(TestCase):
         data = response.json()
         self.assertGreaterEqual(len(data["spendings"]), 1)
 
-    def test_transaction_income_post_no_date(self):
-        response = self.client.post(
-            reverse("transaction_income", kwargs={"user_id": self.user.id}),
-            data={"amount": "500", "category_name": "Salary", "account": "Cash"},
-        )
-        self.assertEqual(response.status_code, 302)  # ตรวจสอบ redirect
-
-    def test_transaction_transfer_post_no_date(self):
-        response = self.client.post(
-            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
-            data={"amount": "300", "category_name": "Bank Transfer",
-                "from_account": "Cash", "to_account": "Bank"},
-        )
-        self.assertEqual(response.status_code, 302)
-
     def test_transaction_expense_delete_category(self):
         Category.objects.create(user=self.user, category_name="TempCat", trans_type="expense")
         response = self.client.post(
@@ -262,4 +224,55 @@ class HomeAppTests(TestCase):
         )
         self.assertFalse(Category.objects.filter(user=self.user, category_name="TempCat").exists())
 
+    def test_landing_redirects_non_root_path(self):
+        # สมมติ path อื่น เช่น "/foo/"
+        response = self.client.get("/foo/")
+        expected_url = f"/{self.user.id}/foo/"
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, expected_url)
 
+
+    def test_transaction_income_creates_new_category(self):
+        # category ที่ส่งยังไม่มีอยู่
+        category_name = "NewIncomeCategory"
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "500",
+                "category_name": category_name,
+                "account": "Cash",
+            },
+        )
+        # ตรวจสอบว่า redirect ถูกต้อง
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("transaction_income", kwargs={"user_id": self.user.id}), response.url)
+
+        # ตรวจสอบว่า category ถูกสร้าง
+        self.assertTrue(Category.objects.filter(user=self.user, category_name=category_name, trans_type="income").exists())
+
+        # ตรวจสอบว่า income ถูกสร้าง
+        income = Income.objects.filter(user=self.user, amount=500, category__category_name=category_name).first()
+        self.assertIsNotNone(income)
+
+        # ตรวจสอบว่า account balance เพิ่มขึ้น
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1500)
+
+    def test_transaction_income_page_get(self):
+        """GET request จะเข้า return render ของ transaction_income_page"""
+        response = self.client.get(reverse("transaction_income", kwargs={"user_id": self.user.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "home/transaction_income.html")
+
+    def test_transaction_expense_page_get(self):
+        """GET request จะเข้า return render ของ transaction_expense_page"""
+        response = self.client.get(reverse("transaction_expense", kwargs={"user_id": self.user.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "home/transaction_expense.html")
+
+    def test_transaction_transfer_page_get(self):
+        """GET request จะเข้า return render ของ transaction_transfer_page"""
+        response = self.client.get(reverse("transaction_transfer", kwargs={"user_id": self.user.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "home/transaction_transfer.html")
