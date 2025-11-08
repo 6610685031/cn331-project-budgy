@@ -136,12 +136,6 @@ def transaction_income_page(request, user_id):
     transaction_type = "income"
 
     if request.method == "POST":
-        if "date" not in request.POST:
-            # return response ของ category_list โดยตรง
-            return category_list(request, user_id)
-
-        else:
-
             date = request.POST["date"]
             amount = request.POST["amount"]
             name_category = request.POST["category_name"]
@@ -181,12 +175,7 @@ def transaction_income_page(request, user_id):
                 reverse("transaction_income", kwargs={"user_id": request.user.id})
             )
 
-    context = {
-        "categories": Category.objects.filter(
-            user=request.user, trans_type=transaction_type
-        ),
-    }
-    return render(request, "home/transaction_income.html", context)
+    return render(request, "home/transaction_income.html")
 
 
 @login_required(login_url="/login/")
@@ -256,11 +245,7 @@ def transaction_expense_page(request, user_id):
         # redirect หลัง POST
         return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
 
-    # GET request
-    context = {
-        "categories": Category.objects.filter(user=user_now, trans_type=transaction_type),
-    }
-    return render(request, "home/transaction_expense.html", context)
+    return render(request, "home/transaction_expense.html")
 
 
 @login_required(login_url="/login/")
@@ -270,11 +255,6 @@ def transaction_transfer_page(request, user_id):
     transaction_type = "transfer"
 
     if request.method == "POST":
-        if "date" not in request.POST:
-            # return response ของ category_list โดยตรง
-            return category_list(request, user_id)
-        else:
-
             date = request.POST["date"]
             amount = request.POST["amount"]
             name_category = request.POST["category_name"]
@@ -328,11 +308,7 @@ def transaction_transfer_page(request, user_id):
                 reverse("transaction_transfer", kwargs={"user_id": request.user.id})
             )
 
-    context = {
-        "categories": Category.objects.filter(
-            user=request.user, trans_type=transaction_type
-        ),
-    }
+
     return render(request, "home/transaction_transfer.html")
 
 
