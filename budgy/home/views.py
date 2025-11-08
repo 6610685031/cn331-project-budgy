@@ -29,7 +29,7 @@ def home_page(request, user_id):
 @login_required(login_url="/login/")
 def dashboard_today_page(request, user_id):
 
-    return render(request, "home/dashboard.html")
+    return render(request, "home/test.html")
 
 
 @login_required
@@ -82,13 +82,6 @@ def accounts_api(request):
     total_balance = sum(acc.balance for acc in Account.objects.filter(user=user))
 
     return JsonResponse({"accounts": data, "total_balance": total_balance})
-
-
-@login_required(login_url="/login/")
-def back_month_dashboard(request, user_id):
-
-    return render(request, "home/dashboard.html")
-
 
 @login_required(login_url="/login/")
 @csrf_exempt

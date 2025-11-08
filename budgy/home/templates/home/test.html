@@ -1,0 +1,219 @@
+{% extends "home/layout.html" %}
+{% block title %}Dashboard{% endblock title %}
+
+{% block body %}
+<style>
+    /* ---------- ใช้ CSS จาก template ที่ส่งมา ---------- */
+    :root {
+        --primary-bg-color: #E3F2FD;
+        --sidebar-bg-color: #64B5F6;
+        --main-content-bg-color: #FFFFFF;
+        --active-link-bg-color: #FFFFFF;
+        --active-link-text-color: #1E88E5;
+        --text-color: #333;
+        --button-bg-color: #69F0AE;
+        --button-text-color: #FFFFFF;
+        --border-radius-lg: 25px;
+        --border-radius-md: 15px;
+        --border-radius-sm: 10px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Poppins', sans-serif; background-color: var(--primary-bg-color); color: var(--text-color); }
+    .app-container { display:flex; flex:1; gap:20px; padding:20px; }
+    /* Sidebar */
+    .sidebar { background-color: var(--sidebar-bg-color); border-radius: var(--border-radius-lg); padding:20px; width:200px; display:flex; flex-direction:column; align-items:center;}
+    .sidebar-header .profile-icon { width:80px; height:80px; background-color: var(--active-link-bg-color); border-radius:50%; margin-bottom:30px;}
+    .sidebar-nav ul { list-style:none; width:100%; }
+    .sidebar-nav li { margin: 20px 0; }
+    .sidebar-nav li a { text-decoration:none; color:var(--active-link-bg-color); display:block; padding:10px 20px; border-radius: var(--border-radius-md); text-align:center; font-weight:500;}
+    .sidebar-nav li.active a { background-color: var(--active-link-bg-color); color: var(--active-link-text-color);}
+    .sidebar-footer { margin-top:auto; }
+    .sidebar-footer .logout-icon { width:50px; height:50px; background-color: var(--active-link-bg-color); border-radius:50%; }
+    /* Main Content */
+    .main-content { flex:1; }
+    .box { background-color: var(--main-content-bg-color); border-radius: var(--border-radius-lg); padding:20px; box-shadow:0 3px 14px rgba(0,0,0,0.08); margin-bottom:20px; }
+    .spending-box { min-height:350px; }
+    .btn-group button.active { background-color:#64B5F6; color:#fff;}
+    .d-none { display:none; }
+    table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    th, td { text-align:left; padding:6px 8px; border:none; }
+    .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 40px;
+            font-size: 14px;
+        }
+
+        .footer-social {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer-social span {
+            font-weight: 500;
+        }
+
+        .footer-social i {
+            font-size: 24px;
+            color: #424242;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: #424242;
+            margin-left: 20px;
+        }
+</style>
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="profile-icon"></div>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'home' request.user.id %}">HOME</a></li>
+                <li class="active"><a href="{% url 'dashboard' request.user.id %}">Dashboard</a></li>
+                <li><a href="{% url 'transaction_income' request.user.id %}">Transaction</a></li>
+                <li><a href="{% url 'stats' request.user.id %}">Stats</a></li>
+                <li><a href="{% url 'settings' request.user.id %}">Settings</a></li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="logout-icon"></div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="box spending-box">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Current Spending</h4>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active" id="btn-daily">Daily</button>
+                    <button class="btn btn-outline-primary" id="btn-monthly">Monthly</button>
+                    <button class="btn btn-outline-primary" id="btn-yearly">Yearly</button>
+                </div>
+            </div>
+            <!-- Date selectors -->
+            <div class="mb-3" id="date-selectors">
+                <input type="date" id="daily-picker" class="form-control" style="max-width:220px">
+                <input type="month" id="monthly-picker" class="form-control d-none" style="max-width:220px">
+                <input type="number" id="yearly-picker" class="form-control d-none" style="max-width:220px" placeholder="Enter Year" min="2000" max="2100">
+            </div>
+            <!-- Spending List Table -->
+            <table id="spending-list">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Income (฿)</th>
+                        <th>Expense (฿)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3" style="text-align:center; color:#888;">Select a date to view spending...</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th id="total-income">0</th>
+                        <th id="total-expense">0</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </main>
+
+</div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-social">
+            <span>Contact Us</span>
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-line"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="far fa-envelope"></i></a>
+        </div>
+        <div class="footer-links">
+            <a href="#">Term of Use</a>
+            <a href="#">Privacy Policy</a>
+        </div>
+    </footer>
+
+<script>
+// ----------------- Mode switching -----------------
+function setMode(mode){
+    document.getElementById("daily-picker").classList.toggle("d-none", mode!=="daily");
+    document.getElementById("monthly-picker").classList.toggle("d-none", mode!=="monthly");
+    document.getElementById("yearly-picker").classList.toggle("d-none", mode!=="yearly");
+
+    ["btn-daily","btn-monthly","btn-yearly"].forEach(id=>document.getElementById(id).classList.remove("active"));
+    document.getElementById(`btn-${mode}`).classList.add("active");
+}
+
+// Event listeners
+document.getElementById("btn-daily").onclick = ()=>setMode("daily");
+document.getElementById("btn-monthly").onclick = ()=>setMode("monthly");
+document.getElementById("btn-yearly").onclick = ()=>setMode("yearly");
+
+document.getElementById("daily-picker").onchange = e=>fetchSpending("daily", e.target.value);
+document.getElementById("monthly-picker").onchange = e=>fetchSpending("monthly", e.target.value);
+document.getElementById("yearly-picker").onchange = e=>fetchSpending("yearly", e.target.value);
+
+// ----------------- Render Spending -----------------
+function renderList(spendings){
+    const tbody = document.querySelector("#spending-list tbody");
+    tbody.innerHTML = "";
+    let totalIncome=0, totalExpense=0;
+
+    if(spendings.length===0){
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#888;">No records found.</td></tr>`;
+    } else {
+        spendings.forEach(item=>{
+            let income=item.type==="income"?item.amount.toFixed(2):"";
+            let expense=item.type==="expense"?item.amount.toFixed(2):"";
+            if(item.type==="income") totalIncome+=item.amount;
+            if(item.type==="expense") totalExpense+=item.amount;
+
+            tbody.innerHTML += `<tr>
+                <td>${item.category}</td>
+                <td>${income}</td>
+                <td>${expense}</td>
+            </tr>`;
+        });
+    }
+    document.getElementById("total-income").textContent = totalIncome.toFixed(2);
+    document.getElementById("total-expense").textContent = totalExpense.toFixed(2);
+}
+
+// ----------------- Fetch Spending -----------------
+async function fetchSpending(mode,value){
+    const params = new URLSearchParams({mode});
+    if(mode==="daily") params.append("date", value);
+    if(mode==="monthly") params.append("month", value);
+    if(mode==="yearly") params.append("year", value);
+
+    const response = await fetch(`/api/spending/?${params.toString()}`);
+    const data = await response.json();
+    renderList(data.spendings);
+}
+
+// ----------------- Set daily picker default -----------------
+window.onload = function(){
+    const dateInput=document.getElementById('daily-picker');
+    if(dateInput){
+        const today=new Date();
+        dateInput.value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        setMode("daily");
+        fetchSpending("daily", dateInput.value);
+    }
+};
+</script>
+{% endblock body %}
