@@ -4,9 +4,11 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_date
 from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Sum
+from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -155,11 +157,25 @@ def transaction_income_page(request, user_id):
                 user=user_now, category_name=add_cat_name, trans_type=transaction_type
             )
 
-        # ---- เพิ่ม Transaction Expense ----
+        # ---- เพิ่ม Transaction Income ----
         elif add_cat_name and date_str:
-            date = request.POST["date"]
-            amount = request.POST["amount"]
-            name_category = request.POST["category_name"]
+            date = parse_date(date_str)  # convert string to date
+
+            if date < timezone.now().date():
+                messages.error(request, "Date cannot be in the past.")
+                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
+            
+            try:
+                amount = float(request.POST["amount"])
+                if amount <= 0:
+                    messages.error(request, "Amount must be positive.")
+                    return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
+                
+            except ValueError:
+                messages.error(request, "Invalid amount format.")
+                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
+            
+            name_category = add_cat_name
             account_name = request.POST["account"]
 
             # fetch category from database by user, category_name and type
@@ -167,7 +183,12 @@ def transaction_income_page(request, user_id):
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
-            account = Account.objects.get(user=user_now, account_name=account_name)
+             # fetch account if error then show message
+            try:
+                account = Account.objects.get(user=user_now, account_name=account_name)
+            except ObjectDoesNotExist:
+                messages.error(request, "Account not specified.")
+                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))       
 
             # Check if this category exist
             if not category_check.exists():
@@ -226,10 +247,24 @@ def transaction_expense_page(request, user_id):
 
         # ---- เพิ่ม Transaction Expense ----
         elif add_cat_name and date_str:
-            from django.utils.dateparse import parse_date
-
             date = parse_date(date_str)  # convert string to date
-            amount = float(request.POST["amount"])
+
+            # Date cannot be in the past.
+            if date < timezone.now().date():
+                messages.error(request, "Date cannot be in the past.")
+                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+            # Amount must be positive.
+            try:
+                amount = float(request.POST["amount"])
+                if amount <= 0:
+                    messages.error(request, "Amount must be positive.")
+                    return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+
+            # Invalid amount format.    
+            except ValueError:
+                messages.error(request, "Invalid amount format.")
+                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+            
             name_category = add_cat_name
             account_name = request.POST["account"]
 
@@ -240,8 +275,12 @@ def transaction_expense_page(request, user_id):
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
-            # fetch account
-            account = Account.objects.get(user=user_now, account_name=account_name)
+            # fetch account if error then show message
+            try:
+                account = Account.objects.get(user=user_now, account_name=account_name)
+            except ObjectDoesNotExist:
+                messages.error(request, "Account not specified.")
+                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))       
 
             # create expense
             Expense.objects.create(
@@ -287,11 +326,28 @@ def transaction_transfer_page(request, user_id):
                 user=user_now, category_name=add_cat_name, trans_type=transaction_type
             )
 
-        # ---- เพิ่ม Transaction Expense ----
+        # ---- เพิ่ม Transaction Transfer ----
         elif add_cat_name and date_str:
-            date = request.POST["date"]
-            amount = request.POST["amount"]
-            name_category = request.POST["category_name"]
+            date = parse_date(date_str)  # convert string to date
+
+            # Date cannot be in the past.
+            if date < timezone.now().date():
+                messages.error(request, "Date cannot be in the past.")
+                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+            # Amount must be positive.
+            try:
+                amount = float(request.POST["amount"])
+                if amount <= 0:
+                    messages.error(request, "Amount must be positive.")
+                    return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+
+            # Invalid amount format.    
+            except ValueError:
+                messages.error(request, "Invalid amount format.")
+                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+            
+            name_category = add_cat_name
+
             from_account = request.POST["from_account"]
             to_account = request.POST["to_account"]
 
@@ -300,8 +356,14 @@ def transaction_transfer_page(request, user_id):
             category_check = Category.objects.filter(
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
-            from_account = Account.objects.get(user=user_now, account_name=from_account)
-            to_account = Account.objects.get(user=user_now, account_name=to_account)
+            
+            # fetch accounts if error then show message
+            try:
+                from_account = Account.objects.get(user=user_now, account_name=from_account)
+                to_account = Account.objects.get(user=user_now, account_name=to_account)
+            except ObjectDoesNotExist:
+                messages.error(request, "Account either not specified or does not exists.")
+                return redirect(reverse("transaction_transfer", kwargs={"user_id": user_now.id}))
 
             # Check if this category exist
             if not category_check.exists():
