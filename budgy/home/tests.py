@@ -399,3 +399,207 @@ class HomeAppTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/transaction_transfer.html")
+
+    def test_transaction_income_negative_amount(self):
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "-100",
+                "category_name": "Salary",
+                "account": "Cash",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        income = Income.objects.filter(user=self.user, amount=-100).first()
+        self.assertIsNone(income)  # income ไม่ถูกสร้าง
+
+    def test_transaction_expense_negative_amount(self):
+        response = self.client.post(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "-50",
+                "category_name": "Food",
+                "account": "Cash",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        expense = Expense.objects.filter(user=self.user, amount=-50).first()
+        self.assertIsNone(expense)  # expense ไม่ถูกสร้าง
+
+    def test_transaction_transfer_negative_amount(self):
+        response = self.client.post(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "-200",
+                "category_name": "Bank Transfer",
+                "from_account": "Cash",
+                "to_account": "Bank",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.account2.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+        self.assertEqual(self.account2.balance, 500)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        transfer_expense = Expense.objects.filter(
+            user=self.user, amount=-200, category_trans="Bank Transfer"
+        ).first()
+
+        self.assertIsNone(transfer_expense)  # transfer expense ไม่ถูกสร้าง
+
+    def test_transaction_income_invalid_amount(self):
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "invalid_amount",
+                "category_name": "Salary",
+                "account": "Cash",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+    def test_transaction_expense_invalid_amount(self):
+        response = self.client.post(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "invalid_amount",
+                "category_name": "Food",
+                "account": "Cash",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+    def test_transaction_transfer_invalid_amount(self):
+        response = self.client.post(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "invalid_amount",
+                "category_name": "Bank Transfer",
+                "from_account": "Cash",
+                "to_account": "Bank",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.account2.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+        self.assertEqual(self.account2.balance, 500)  # ยอดเงินไม่เปลี่ยนแปลง
+
+    def test_transaction_income_account_not_exist(self):
+        response = self.client.post(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "100",
+                "category_name": "Salary",
+                "account": "NonExistentAccount",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_income", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        income = Income.objects.filter(user=self.user, amount=100).first()
+        self.assertIsNone(income)  # income ไม่ถูกสร้าง
+
+    def test_transaction_expense_account_not_exist(self):
+        response = self.client.post(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "50",
+                "category_name": "Food",
+                "account": "NonExistentAccount",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_expense", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        expense = Expense.objects.filter(user=self.user, amount=50).first()
+        self.assertIsNone(expense)  # expense ไม่ถูกสร้าง
+
+    def test_transaction_transfer_account_not_exist(self):
+        response = self.client.post(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            data={
+                "date": "2025-11-08",
+                "amount": "200",
+                "category_name": "Bank Transfer",
+                "from_account": "Cash",
+                "to_account": "NonExistentAccount",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("transaction_transfer", kwargs={"user_id": self.user.id}),
+            response.url,
+        )
+
+        self.account.refresh_from_db()
+        self.account2.refresh_from_db()
+        self.assertEqual(self.account.balance, 1000)  # ยอดเงินไม่เปลี่ยนแปลง
+        self.assertEqual(self.account2.balance, 500)  # ยอดเงินไม่เปลี่ยนแปลง
+
+        transfer_expense = Expense.objects.filter(
+            user=self.user, amount=200, category_trans="Bank Transfer"
+        ).first()
+
+        self.assertIsNone(transfer_expense)  # transfer expense ไม่ถูกสร้าง

@@ -165,12 +165,16 @@ def transaction_income_page(request, user_id):
                 amount = float(request.POST["amount"])
                 if amount <= 0:
                     messages.error(request, "Amount must be positive.")
-                    return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
-                
+                    return redirect(
+                        reverse("transaction_income", kwargs={"user_id": user_now.id})
+                    )
+
             except ValueError:
                 messages.error(request, "Invalid amount format.")
-                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
-            
+                return redirect(
+                    reverse("transaction_income", kwargs={"user_id": user_now.id})
+                )
+
             name_category = add_cat_name
             account_name = request.POST["account"]
 
@@ -179,12 +183,14 @@ def transaction_income_page(request, user_id):
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
 
-             # fetch account if error then show message
+            # fetch account if error then show message
             try:
                 account = Account.objects.get(user=user_now, account_name=account_name)
             except ObjectDoesNotExist:
                 messages.error(request, "Account not specified.")
-                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))       
+                return redirect(
+                    reverse("transaction_income", kwargs={"user_id": user_now.id})
+                )
 
             # Check if this category exist
             if not category_check.exists():
@@ -250,13 +256,17 @@ def transaction_expense_page(request, user_id):
                 amount = float(request.POST["amount"])
                 if amount <= 0:
                     messages.error(request, "Amount must be positive.")
-                    return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+                    return redirect(
+                        reverse("transaction_expense", kwargs={"user_id": user_now.id})
+                    )
 
-            # Invalid amount format.    
+            # Invalid amount format.
             except ValueError:
                 messages.error(request, "Invalid amount format.")
-                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
-            
+                return redirect(
+                    reverse("transaction_expense", kwargs={"user_id": user_now.id})
+                )
+
             name_category = add_cat_name
             account_name = request.POST["account"]
 
@@ -272,7 +282,9 @@ def transaction_expense_page(request, user_id):
                 account = Account.objects.get(user=user_now, account_name=account_name)
             except ObjectDoesNotExist:
                 messages.error(request, "Account not specified.")
-                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))       
+                return redirect(
+                    reverse("transaction_expense", kwargs={"user_id": user_now.id})
+                )
 
             # create expense
             Expense.objects.create(
@@ -326,13 +338,17 @@ def transaction_transfer_page(request, user_id):
                 amount = float(request.POST["amount"])
                 if amount <= 0:
                     messages.error(request, "Amount must be positive.")
-                    return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
+                    return redirect(
+                        reverse("transaction_transfer", kwargs={"user_id": user_now.id})
+                    )
 
-            # Invalid amount format.    
+            # Invalid amount format.
             except ValueError:
                 messages.error(request, "Invalid amount format.")
-                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
-            
+                return redirect(
+                    reverse("transaction_transfer", kwargs={"user_id": user_now.id})
+                )
+
             name_category = add_cat_name
 
             from_account = request.POST["from_account"]
@@ -343,14 +359,20 @@ def transaction_transfer_page(request, user_id):
             category_check = Category.objects.filter(
                 user=user_now, category_name=name_category, trans_type=transaction_type
             )
-            
+
             # fetch accounts if error then show message
             try:
-                from_account = Account.objects.get(user=user_now, account_name=from_account)
+                from_account = Account.objects.get(
+                    user=user_now, account_name=from_account
+                )
                 to_account = Account.objects.get(user=user_now, account_name=to_account)
             except ObjectDoesNotExist:
-                messages.error(request, "Account either not specified or does not exists.")
-                return redirect(reverse("transaction_transfer", kwargs={"user_id": user_now.id}))
+                messages.error(
+                    request, "Account either not specified or does not exists."
+                )
+                return redirect(
+                    reverse("transaction_transfer", kwargs={"user_id": user_now.id})
+                )
 
             # Check if this category exist
             if not category_check.exists():
