@@ -40,7 +40,7 @@ def dashboard_today_page(request, user_id):
     }
 
     # ส่ง context เข้า render
-    return render(request, "home/test.html", context)
+    return render(request, "home/dashboard.html", context)
 
 
 @login_required
