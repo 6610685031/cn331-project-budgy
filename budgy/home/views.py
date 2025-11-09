@@ -161,10 +161,6 @@ def transaction_income_page(request, user_id):
         elif add_cat_name and date_str:
             date = parse_date(date_str)  # convert string to date
 
-            if date < timezone.now().date():
-                messages.error(request, "Date cannot be in the past.")
-                return redirect(reverse("transaction_income", kwargs={"user_id": user_now.id}))
-            
             try:
                 amount = float(request.POST["amount"])
                 if amount <= 0:
@@ -249,10 +245,6 @@ def transaction_expense_page(request, user_id):
         elif add_cat_name and date_str:
             date = parse_date(date_str)  # convert string to date
 
-            # Date cannot be in the past.
-            if date < timezone.now().date():
-                messages.error(request, "Date cannot be in the past.")
-                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
             # Amount must be positive.
             try:
                 amount = float(request.POST["amount"])
@@ -330,11 +322,6 @@ def transaction_transfer_page(request, user_id):
         elif add_cat_name and date_str:
             date = parse_date(date_str)  # convert string to date
 
-            # Date cannot be in the past.
-            if date < timezone.now().date():
-                messages.error(request, "Date cannot be in the past.")
-                return redirect(reverse("transaction_expense", kwargs={"user_id": user_now.id}))
-            # Amount must be positive.
             try:
                 amount = float(request.POST["amount"])
                 if amount <= 0:
