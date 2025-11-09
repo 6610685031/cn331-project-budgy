@@ -2,7 +2,10 @@ from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
+    # error handling for when no user_id is provided
     path("", views.landing_page, name="landing"),
+
+    path("<int:user_id>/", views.home_page, name="home"),
     path("<int:user_id>/home/", views.home_page, name="home"),
     path("<int:user_id>/dashboard/", views.dashboard_today_page, name="dashboard"),
     path(
@@ -26,5 +29,7 @@ urlpatterns = [
     path("contact/", views.contact, name="contact"),
     path("api/spending/", views.spending_api, name="spending_api"),
     path("api/accounts/", views.accounts_api, name="accounts_api"),
+    
+    # catch-all for any other paths without user_id
     re_path(r"^([a-zA-Z]+)/$", views.landing_page, name="landing"),
 ]
