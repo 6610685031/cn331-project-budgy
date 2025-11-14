@@ -1,5 +1,7 @@
 from django.urls import path, re_path
 from . import views
+from django.contrib.auth import views as auth_views
+
 
 urlpatterns = [
     # error handling for when no user_id is provided
@@ -28,6 +30,9 @@ urlpatterns = [
     path("api/stats/yearly/", views.stats_yearly_api, name="stats_yearly_api"),
     
     path("<int:user_id>/settings/", views.settings_page, name="settings"),
+    path('password_change/', auth_views.PasswordChangeView.as_view(template_name='home/password_change.html', success_url='/settings/'), name='password_change'),
+    path('delete_account/', views.delete_account_page, name='delete_account'),
+
     path("<int:user_id>/edit/category/", views.category_list, name="category_list"),
 
     path("<int:user_id>/accounts/", views.account_management_page, name="account_management"),
