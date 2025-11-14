@@ -29,6 +29,11 @@ urlpatterns = [
     
     path("<int:user_id>/settings/", views.settings_page, name="settings"),
     path("<int:user_id>/edit/category/", views.category_list, name="category_list"),
+
+    path("<int:user_id>/accounts/", views.account_management_page, name="account_management"),
+    path("<int:user_id>/accounts/delete/<int:account_id>/", views.delete_account_view, name="delete_account"),
+    path("api/accounts/update/<int:account_id>/", views.update_account_api, name="update_account_api"),
+
     path("contact/", views.contact, name="contact"),
     path("api/spending/", views.spending_api, name="spending_api"),
     path("api/accounts/", views.accounts_api, name="accounts_api"),
