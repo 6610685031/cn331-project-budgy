@@ -13,6 +13,8 @@ from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .models import Transaction, Account, Category, MonthReport, Income, Expense
+import calendar
+
 
 
 # Create your views here
@@ -25,7 +27,47 @@ def landing_page(request, user_id=None):
 
 @login_required(login_url="/login/")
 def home_page(request, user_id):
-    return render(request, "home/home.html")
+    user = request.user
+    
+    # --- 1. คำนวณยอดเงินคงเหลือทั้งหมด ---
+    # ดึงข้อมูล accounts ทั้งหมดของผู้ใช้ แล้วรวมยอด balance
+    # หากไม่มี account เลย ให้ค่าเป็น 0
+    total_balance = Account.objects.filter(user=user).aggregate(Sum('balance'))['balance__sum'] or 0
+
+    # --- 2. คำนวณยอดรวมของเดือนปัจจุบัน ---
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+
+    # ยอดรวมรายรับของเดือนปัจจุบัน
+    month_income = Income.objects.filter(
+        user=user,
+        date__year=current_year,
+        date__month=current_month
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # ยอดรวมรายจ่ายของเดือนปัจจุบัน
+    month_expense = Expense.objects.filter(
+        user=user,
+        date__year=current_year,
+        date__month=current_month
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # --- 3. คำนวณสัดส่วนรายจ่ายต่อรายรับ ---
+    # ป้องกันการหารด้วยศูนย์ หากเดือนนี้ยังไม่มีรายรับ
+    if month_income > 0:
+        expense_percentage = (month_expense / month_income) * 100
+    else:
+        expense_percentage = 0 # ถ้าไม่มีรายรับ ให้สัดส่วนเป็น 0
+
+    # --- 4. สร้าง context เพื่อส่งข้อมูลไปที่ Template ---
+    context = {
+        'total_balance': total_balance,
+        'month_income': month_income,
+        'month_expense': month_expense,
+        'expense_percentage': expense_percentage
+    }
+    
+    return render(request, "home/home.html", context)
 
 
 @login_required(login_url="/login/")
@@ -423,7 +465,91 @@ def transaction_transfer_page(request, user_id):
 
 @login_required(login_url="/login/")
 def stats_page(request, user_id):
-    return render(request, "home/stats.html")
+    """
+    View นี้จะทำหน้าที่ render หน้า HTML หลักของ Stats
+    และส่งข้อมูลพื้นฐานเช่น ปีที่มี Transaction ไปให้ Template
+    """
+    user = request.user
+    # ดึงปีทั้งหมดที่มีการทำรายการ เพื่อไปสร้างเป็นตัวเลือกใน dropdown
+    # เรียงจากปีล่าสุดไปหาเก่าสุด
+    years_with_transactions = Transaction.objects.filter(user=user).dates('date', 'year', order='DESC')
+    
+    # ดึงเดือนและปีทั้งหมดที่มีรายการ expense เพื่อใช้ในหน้า Compare
+    expense_months = Expense.objects.filter(user=user) \
+        .dates('date', 'month', order='DESC')
+        
+    context = {
+        'years': [d.year for d in years_with_transactions],
+        'expense_months': [{'value': d.strftime('%Y-%m'), 'text': d.strftime('%B %Y')} for d in expense_months]
+    }
+    return render(request, "home/stats.html", context)
+
+
+@login_required
+def stats_summary_api(request):
+    """
+    API View สำหรับส่งข้อมูล Pie Chart (Income หรือ Expense)
+    รับ parameter: ?year=YYYY&month=MM&type=income
+    """
+    user = request.user
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    trans_type = request.GET.get('type') # 'income' or 'expense'
+
+    if not all([year, month, trans_type]):
+        return JsonResponse({'error': 'Missing parameters'}, status=400)
+
+    model = Income if trans_type == 'income' else Expense
+
+    # Query ข้อมูลและจัดกลุ่มตาม category
+    summary = model.objects.filter(
+        user=user,
+        date__year=year,
+        date__month=month
+    ).values('category_trans').annotate(total=Sum('amount')).order_by('-total')
+
+    overall_total = sum(item['total'] for item in summary)
+
+    data = {
+        'labels': [item['category_trans'] for item in summary],
+        'values': [item['total'] for item in summary],
+        'overall_total': overall_total,
+    }
+    return JsonResponse(data)
+
+
+@login_required
+def stats_yearly_api(request):
+    """
+    API View สำหรับส่งข้อมูล Line Chart (Statistics)
+    รับ parameter: ?year=YYYY
+    """
+    user = request.user
+    year = request.GET.get('year')
+
+    if not year:
+        return JsonResponse({'error': 'Year parameter is required'}, status=400)
+
+    income_data = []
+    expense_data = []
+    month_labels = [calendar.month_name[i] for i in range(1, 13)]
+
+    for month in range(1, 13):
+        income_total = Income.objects.filter(
+            user=user, date__year=year, date__month=month
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        expense_total = Expense.objects.filter(
+            user=user, date__year=year, date__month=month
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        income_data.append(income_total)
+        expense_data.append(expense_total)
+        
+    data = {
+        'labels': month_labels,
+        'income': income_data,
+        'expense': expense_data
+    }
+    return JsonResponse(data)
 
 
 @login_required(login_url="/login/")
@@ -433,3 +559,5 @@ def settings_page(request, user_id):
 
 def contact(request):
     return render(request, "home/contact.html")
+
+
