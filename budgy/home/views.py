@@ -1,4 +1,3 @@
-# import json
 # import requests
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
@@ -14,6 +13,9 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .models import Transaction, Account, Category, MonthReport, Income, Expense
 import calendar
+import json
+from django.views.decorators.http import require_POST
+
 
 
 
@@ -560,4 +562,82 @@ def settings_page(request, user_id):
 def contact(request):
     return render(request, "home/contact.html")
 
+@login_required(login_url="/login/")
+def account_management_page(request, user_id):
+    user = request.user
+    
+    # Logic สำหรับการสร้าง Account ใหม่ (POST request)
+    if request.method == "POST":
+        account_name = request.POST.get("account_name")
+        try:
+            balance = float(request.POST.get("balance", 0))
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid balance format.")
+            return redirect("account_management", user_id=user.id)
 
+        if not account_name:
+            messages.error(request, "Account name is required.")
+        # ตรวจสอบว่ามีชื่อ Account นี้อยู่แล้วหรือไม่
+        elif Account.objects.filter(user=user, account_name=account_name).exists():
+            messages.error(request, f"Account with name '{account_name}' already exists.")
+        else:
+            Account.objects.create(user=user, account_name=account_name, balance=balance, type_acc="Default")
+            messages.success(request, f"Account '{account_name}' created successfully.")
+        
+        return redirect("account_management", user_id=user.id)
+
+    # ดึงข้อมูล Account ทั้งหมดมาแสดง (GET request)
+    accounts = Account.objects.filter(user=user).order_by('id')
+    context = {
+        'accounts': accounts
+    }
+    return render(request, "home/accounts_management.html", context)
+
+
+@login_required
+@require_POST # บังคับให้ View นี้รับเฉพาะ POST request เพื่อความปลอดภัย
+def update_account_api(request, account_id):
+    try:
+        user = request.user
+        account = get_object_or_404(Account, pk=account_id, user=user)
+
+        # เงื่อนไขป้องกันการแก้ไข 'Cash'
+        if account.account_name == 'Cash':
+            return JsonResponse({'error': "The 'Cash' account cannot be edited."}, status=403)
+
+        # ดึงข้อมูลชื่อใหม่จาก request body (ที่ส่งมาจาก JavaScript)
+        data = json.loads(request.body)
+        new_name = data.get('account_name', '').strip()
+
+        if not new_name:
+            return JsonResponse({'error': 'Account name cannot be empty.'}, status=400)
+        
+        # ตรวจสอบชื่อซ้ำ
+        if Account.objects.filter(user=user, account_name=new_name).exclude(pk=account_id).exists():
+            return JsonResponse({'error': f"Account with name '{new_name}' already exists."}, status=400)
+
+        # อัปเดตและบันทึก
+        account.account_name = new_name
+        account.save()
+
+        return JsonResponse({'success': True, 'new_name': account.account_name})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required(login_url="/login/")
+def delete_account_view(request, user_id, account_id):
+    user = request.user
+    account = get_object_or_404(Account, pk=account_id, user=user)
+
+    if request.method == "POST":
+        if account.account_name == 'Cash':
+            messages.error(request, "The 'Cash' account cannot be deleted.")
+        elif account.balance != 0:
+            messages.error(request, f"Cannot delete '{account.account_name}' because it still has a balance. Please transfer the funds first.")
+        else:
+            account.delete()
+            messages.success(request, "Account deleted successfully.")
+    
+    return redirect("account_management", user_id=user.id)
