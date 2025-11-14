@@ -15,7 +15,10 @@ from .models import Transaction, Account, Category, MonthReport, Income, Expense
 import calendar
 import json
 from django.views.decorators.http import require_POST
-
+from .forms import UsernameUpdateForm, ProfilePictureUpdateForm, AccountDeleteForm
+from django.contrib.auth import logout, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from .models import Profile
 
 
 
@@ -556,11 +559,63 @@ def stats_yearly_api(request):
 
 @login_required(login_url="/login/")
 def settings_page(request, user_id):
-    return render(request, "home/settings.html")
+
+    # ตรวจสอบว่ามี Profile หรือยัง ถ้าไม่ ให้สร้างทันที
+    try:
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=request.user)
+        
+    # สร้าง instance ของฟอร์มต่างๆ (ใช้ 'profile' ที่เราเพิ่งสร้าง)
+    u_form = UsernameUpdateForm(instance=request.user)
+    p_form = ProfilePictureUpdateForm(instance=profile)
+    
+    if request.method == 'POST':
+        # ตรวจสอบว่าปุ่มไหนถูกกด
+        if 'update_username' in request.POST:
+            u_form = UsernameUpdateForm(request.POST, instance=request.user)
+            if u_form.is_valid():
+                u_form.save()
+                messages.success(request, 'Your username has been updated!')
+                return redirect('settings', user_id=request.user.id)
+
+        elif 'update_picture' in request.POST:
+            p_form = ProfilePictureUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+            if p_form.is_valid():
+                p_form.save()
+                messages.success(request, 'Your profile picture has been updated!')
+                return redirect('settings', user_id=request.user.id)
+
+    context = {
+        'u_form': u_form,
+        'p_form': p_form
+    }
+    return render(request, 'home/settings.html', context)
+
+
+@login_required
+def delete_account_page(request):
+    if request.method == 'POST':
+        form = AccountDeleteForm(request.POST)
+        if form.is_valid():
+            user = request.user
+            password = form.cleaned_data["password"]
+            if user.check_password(password):
+                # ก่อนลบ ให้ทำการ logout เพื่อเคลียร์ session
+                logout(request)
+                # ทำการลบ user
+                user.delete()
+                messages.success(request, 'Your account has been permanently deleted.')
+                return redirect('login') # เปลี่ยน 'login' เป็นชื่อ URL หน้า login ของคุณใน authorized app
+            else:
+                messages.error(request, 'Incorrect password. Account not deleted.')
+    
+    return redirect('settings')
 
 
 def contact(request):
     return render(request, "home/contact.html")
+
 
 @login_required(login_url="/login/")
 def account_management_page(request, user_id):
