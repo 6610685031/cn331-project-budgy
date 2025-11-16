@@ -7,6 +7,11 @@ class UsernameUpdateForm(forms.ModelForm):
         model = User
         fields = ['username']
 
+class EmailUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['email']
+        
 class ProfilePictureUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile

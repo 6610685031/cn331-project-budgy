@@ -15,7 +15,7 @@ from .models import Transaction, Account, Category, MonthReport, Income, Expense
 import calendar
 import json
 from django.views.decorators.http import require_POST
-from .forms import UsernameUpdateForm, ProfilePictureUpdateForm, AccountDeleteForm
+from .forms import UsernameUpdateForm, EmailUpdateForm, ProfilePictureUpdateForm, AccountDeleteForm
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import Profile
@@ -577,6 +577,13 @@ def settings_page(request, user_id):
             if u_form.is_valid():
                 u_form.save()
                 messages.success(request, 'Your username has been updated!')
+                return redirect('settings', user_id=request.user.id)
+            
+        elif 'update_email' in request.POST: # <-- เพิ่มเงื่อนไขสำหรับอีเมล
+            e_form = EmailUpdateForm(request.POST, instance=request.user)
+            if e_form.is_valid():
+                e_form.save()
+                messages.success(request, 'Your email has been updated!')
                 return redirect('settings', user_id=request.user.id)
 
         elif 'update_picture' in request.POST:
