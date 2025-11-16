@@ -610,6 +610,7 @@ class HomeAppTests(TestCase):
 
         self.assertIsNone(transfer_expense)  # transfer expense ไม่ถูกสร้าง
 
+
 class HomePageSummaryTests(TestCase):
     """
     ทดสอบสรุปข้อมูลในหน้า Homepage (ยอดรวม, income/expense เดือนปัจจุบัน, expense_percentage)
@@ -648,9 +649,7 @@ class HomePageSummaryTests(TestCase):
             from_account=self.acc1,
         )
 
-        response = self.client.get(
-            reverse("home", kwargs={"user_id": self.user.id})
-        )
+        response = self.client.get(reverse("home", kwargs={"user_id": self.user.id}))
         self.assertEqual(response.status_code, 200)
 
         ctx = response.context
@@ -672,9 +671,7 @@ class HomePageSummaryTests(TestCase):
             from_account=self.acc1,
         )
 
-        response = self.client.get(
-            reverse("home", kwargs={"user_id": self.user.id})
-        )
+        response = self.client.get(reverse("home", kwargs={"user_id": self.user.id}))
         self.assertEqual(response.status_code, 200)
 
         ctx = response.context
@@ -693,6 +690,7 @@ class HomePageSummaryTests(TestCase):
         )
         response = self.client.get(reverse("home", args=[self.user.id]))
         self.assertEqual(response.context["expense_percentage"], 0)
+
 
 class StatsPageAndApiTests(TestCase):
     """
@@ -727,9 +725,7 @@ class StatsPageAndApiTests(TestCase):
             from_account=self.account,
         )
 
-        response = self.client.get(
-            reverse("stats", kwargs={"user_id": self.user.id})
-        )
+        response = self.client.get(reverse("stats", kwargs={"user_id": self.user.id}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "home/stats.html")
 
@@ -836,9 +832,7 @@ class StatsPageAndApiTests(TestCase):
             from_account=self.account,
         )
 
-        response = self.client.get(
-            reverse("stats_yearly_api") + "?year=2024"
-        )
+        response = self.client.get(reverse("stats_yearly_api") + "?year=2024")
         self.assertEqual(response.status_code, 200)
         data = response.json()
 
@@ -865,6 +859,7 @@ class StatsPageAndApiTests(TestCase):
         self.assertEqual(data["income"], [0] * 12)
         self.assertEqual(data["expense"], [0] * 12)
 
+
 class SettingsAndDeleteAccountTests(TestCase):
     """
     ทดสอบหน้า settings (แก้ username / รูป) + ลบ account ผู้ใช้
@@ -874,6 +869,7 @@ class SettingsAndDeleteAccountTests(TestCase):
         self.password = "password123"
         self.user = User.objects.create_user(
             username="settingsuser",
+            email="test@test.com",
             password=self.password,
         )
         self.client = Client()
@@ -963,6 +959,19 @@ class SettingsAndDeleteAccountTests(TestCase):
             data={"image": fake_file, "update_picture": "1"},
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_update_email_via_settings(self):
+        response = self.client.post(
+            reverse("settings", kwargs={"user_id": self.user.id}),
+            data={
+                "email": "newemail@test.com",
+                "update_email": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "newemail@test.com")
+
 
 class AccountManagementTests(TestCase):
     """
@@ -1174,7 +1183,7 @@ class AccountManagementTests(TestCase):
         request = factory.post(
             f"/api/accounts/update/{acc.id}/",
             data="invalid-json",
-            content_type="application/json"
+            content_type="application/json",
         )
         request.user = self.user
 
