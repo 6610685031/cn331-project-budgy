@@ -9,7 +9,6 @@ from django.test import override_settings, RequestFactory
 from unittest.mock import patch, MagicMock
 from home import views
 import json
-import tempfile
 
 
 class HomeAppTests(TestCase):
@@ -695,7 +694,6 @@ class HomePageSummaryTests(TestCase):
         response = self.client.get(reverse("home", args=[self.user.id]))
         self.assertEqual(response.context["expense_percentage"], 0)
 
-
 class StatsPageAndApiTests(TestCase):
     """
     ทดสอบหน้า Stats ทั้ง 4 แบบ + API (summary + yearly)
@@ -867,7 +865,6 @@ class StatsPageAndApiTests(TestCase):
         self.assertEqual(data["income"], [0] * 12)
         self.assertEqual(data["expense"], [0] * 12)
 
-
 class SettingsAndDeleteAccountTests(TestCase):
     """
     ทดสอบหน้า settings (แก้ username / รูป) + ลบ account ผู้ใช้
@@ -966,7 +963,6 @@ class SettingsAndDeleteAccountTests(TestCase):
             data={"image": fake_file, "update_picture": "1"},
         )
         self.assertEqual(response.status_code, 200)
-
 
 class AccountManagementTests(TestCase):
     """
@@ -1169,3 +1165,22 @@ class AccountManagementTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Account.objects.filter(id=acc.id).exists())
 
+    def test_update_account_api_error_case(self):
+        acc = Account.objects.create(
+            user=self.user, account_name="Boom", type_acc="Default", balance=0
+        )
+
+        factory = RequestFactory()
+        request = factory.post(
+            f"/api/accounts/update/{acc.id}/",
+            data="invalid-json",
+            content_type="application/json"
+        )
+        request.user = self.user
+
+        with patch("home.views.json.loads", side_effect=Exception("boom")):
+            response = views.update_account_api(request, acc.id)
+
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content.decode())
+        self.assertIn("error", data)
