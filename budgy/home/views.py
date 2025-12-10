@@ -592,6 +592,14 @@ def settings_page(request, user_id):
                 p_form.save()
                 messages.success(request, 'Your profile picture has been updated!')
                 return redirect('settings', user_id=request.user.id)
+            
+        # ---- เปิด/ปิด Mascot ----
+        elif 'update_mascot' in request.POST:
+            # ถ้า checkbox ถูกติ๊ก => มี key 'show_mascot' ใน POST
+            profile.show_mascot = 'show_mascot' in request.POST
+            profile.save()
+            messages.success(request, 'Mascot setting has been updated!')
+            return redirect('settings', user_id=request.user.id)
 
     context = {
         'u_form': u_form,
@@ -703,3 +711,97 @@ def delete_account_view(request, user_id, account_id):
             messages.success(request, "Account deleted successfully.")
     
     return redirect("account_management", user_id=user.id)
+
+# ----------------------------Mascot---------------------------
+
+import random
+from django.views.decorators.http import require_GET
+
+@login_required(login_url="/login/")
+def pet_page(request, user_id=None):
+    """
+    หน้า pet: template จะโหลด JS/CSS/รูปจาก static/pet/
+    เข้าถึงได้ที่ /pet/ (หรือปรับ path ใน urls.py)
+    """
+    return render(request, "home/pet.html", {})
+
+
+@login_required
+@require_GET
+def pet_chat_api(request):
+    """
+    API สำหรับสุ่มข้อความเมื่อคลิก pet
+    GET /pet/chat/ -> JSON {"text": "..."}
+    """
+    LINES = [
+        "ฮัลโหล~ มีอะไรให้ช่วยไหม?",
+        "พักสายตาหน่อยนะ~",
+        "ช่วงนี้โค้ดเยอะจัง...",
+        "อยากกินขนม~",
+        "เดี๋ยวไปขยับตัวก่อนนะ",
+        "อยากได้กาแฟมั้ยครับ?",
+    ]
+    text = random.choice(LINES)
+    return JsonResponse({"text": text})
+
+from django.db.models import Sum
+from datetime import datetime
+from django.views.decorators.http import require_GET
+
+@login_required(login_url="/login/")
+@require_GET
+def pet_status_api(request):
+    """
+    คืนข้อมูลการเงินสรุปสำหรับ pet ใช้ตัดสินใจ (JSON)
+    GET /pet/status/  (login required)
+    Response:
+    {
+      "total_balance": 123.45,
+      "month_income": 200.0,
+      "month_expense": 50.0,
+      "expense_percentage": 25.0,
+      "advice": "...",
+      "status": "happy"|"neutral"|"warn"|"danger"
+    }
+    """
+    user = request.user
+    now = datetime.now()
+    year, month = now.year, now.month
+
+    # total balance (all accounts)
+    total_balance = Account.objects.filter(user=user).aggregate(Sum('balance'))['balance__sum'] or 0.0
+
+    # income & expense for current month
+    month_income = Income.objects.filter(user=user, date__year=year, date__month=month).aggregate(Sum('amount'))['amount__sum'] or 0.0
+    month_expense = Expense.objects.filter(user=user, date__year=year, date__month=month).aggregate(Sum('amount'))['amount__sum'] or 0.0
+
+    # percent
+    if month_income > 0:
+        expense_percentage = (month_expense / month_income) * 100
+    else:
+        expense_percentage = 0.0
+
+    # decide status and advice
+    # simple heuristic — you can tune thresholds
+    if total_balance >= 5000 and expense_percentage < 40:
+        status = "happy"
+        advice = "ยอดดีมาก! เก็บต่อไปนะ 🥳"
+    elif total_balance >= 1000 and expense_percentage < 60:
+        status = "neutral"
+        advice = "กำลังไปได้สวย แต่ระวังการใช้จ่ายเพิ่มนะ"
+    elif expense_percentage >= 80 or total_balance < 0:
+        status = "danger"
+        advice = "ระวัง! รายจ่ายสูงกว่ารายรับหรือยอดติดลบ ควรตรวจสอบ"
+    else:
+        status = "warn"
+        advice = "สัดส่วนรายจ่ายสูงขึ้น — ลองทบทวนการใช้จ่าย"
+
+    data = {
+        "total_balance": round(total_balance, 2),
+        "month_income": round(month_income, 2),
+        "month_expense": round(month_expense, 2),
+        "expense_percentage": round(expense_percentage, 2),
+        "advice": advice,
+        "status": status,
+    }
+    return JsonResponse(data)
