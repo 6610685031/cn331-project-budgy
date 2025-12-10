@@ -43,6 +43,11 @@ urlpatterns = [
     path("api/spending/", views.spending_api, name="spending_api"),
     path("api/accounts/", views.accounts_api, name="accounts_api"),
     
+    #MASCOT
+    path('pet/', views.pet_page, name='pet_page'),
+    path('pet/chat/', views.pet_chat_api, name='pet_chat_api'),
+    path('pet/status/', views.pet_status_api, name='pet_status_api'),
+
     # catch-all for any other paths without user_id
     re_path(r"^([a-zA-Z]+)/$", views.landing_page, name="landing"),
 ]
