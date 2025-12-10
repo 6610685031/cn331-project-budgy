@@ -70,3 +70,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return f'{self.user.username} Profile'
+
+#Mascot status on/off
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    image = models.ImageField(default='default.png', upload_to='profile_pics')
+    show_mascot = models.BooleanField(default=True)  # 👈 เพิ่มบรรทัดนี้
+
+    def __str__(self):
+        return f'{self.user.username} Profile'
