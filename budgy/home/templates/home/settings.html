@@ -78,6 +78,36 @@
             </form>
             <hr>
 
+            <hr>
+
+            <!-- Mascot Toggle Form -->
+            <form method="POST" class="mb-4">
+                {% csrf_token %}
+                <input type="hidden" name="update_mascot" value="1">
+
+                <label class="form-label">Desktop Mascot</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="id_show_mascot"
+                           name="show_mascot"
+                           {% if request.user.profile.show_mascot %}checked{% endif %}>
+                    <label class="form-check-label" for="id_show_mascot">
+                        แสดงน้อง BUDGY มุมจอ
+                    </label>
+                </div>
+                <small class="text-muted">
+                    ถ้าปิดแล้ว น้องจะไม่โผล่ในทุกหน้า (ต้องโหลดหน้าใหม่หลังบันทึก)
+                </small>
+
+                <button type="submit"
+                        class="btn btn-outline-primary btn-sm mt-2">
+                    Save Mascot Setting
+                </button>
+            </form>
+
+            <hr>
+
             <!-- Other Actions -->
             <div class="mt-4">
                 <div class="mb-3">
