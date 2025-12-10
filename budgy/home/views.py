@@ -716,12 +716,34 @@ def delete_account_view(request, user_id, account_id):
 
 import random
 from django.views.decorators.http import require_GET
+from django.db.models import Sum
+from datetime import datetime
+
+@login_required(login_url="/login/")
+def pet_page(request, user_id=None):
+    return render(request, "home/pet.html", {})
+
+
+@login_required
+@require_GET
+def pet_chat_api(request):
+    LINES = [
+        "ฮัลโหล~ มีอะไรให้ช่วยไหม?",
+        "พักสายตาหน่อยนะ~",
+        "ช่วงนี้โค้ดเยอะจัง...",
+        "อยากกินขนม~",
+        "เดี๋ยวไปขยับตัวก่อนนะ",
+        "อยากได้กาแฟมั้ยครับ?",
+    ]
+    text = random.choice(LINES)
+    return JsonResponse({"text": text})
+
 
 @login_required(login_url="/login/")
 def pet_page(request, user_id=None):
     """
-    หน้า pet: template จะโหลด JS/CSS/รูปจาก static/pet/
-    เข้าถึงได้ที่ /pet/ (หรือปรับ path ใน urls.py)
+    ถ้าอยากมีหน้าเทสเฉพาะ mascot ก็ใช้ view นี้
+    (แต่ในโปรเจกต์จริง เราใช้ mascot แปะใน layout.html อยู่แล้ว)
     """
     return render(request, "home/pet.html", {})
 
@@ -730,8 +752,7 @@ def pet_page(request, user_id=None):
 @require_GET
 def pet_chat_api(request):
     """
-    API สำหรับสุ่มข้อความเมื่อคลิก pet
-    GET /pet/chat/ -> JSON {"text": "..."}
+    แชทสุ่มทั่วไป เวลาน้องพูดเล่น / fallback
     """
     LINES = [
         "ฮัลโหล~ มีอะไรให้ช่วยไหม?",
@@ -744,64 +765,69 @@ def pet_chat_api(request):
     text = random.choice(LINES)
     return JsonResponse({"text": text})
 
-from django.db.models import Sum
-from datetime import datetime
-from django.views.decorators.http import require_GET
 
 @login_required(login_url="/login/")
 @require_GET
 def pet_status_api(request):
-    """
-    คืนข้อมูลการเงินสรุปสำหรับ pet ใช้ตัดสินใจ (JSON)
-    GET /pet/status/  (login required)
-    Response:
-    {
-      "total_balance": 123.45,
-      "month_income": 200.0,
-      "month_expense": 50.0,
-      "expense_percentage": 25.0,
-      "advice": "...",
-      "status": "happy"|"neutral"|"warn"|"danger"
-    }
-    """
+
     user = request.user
     now = datetime.now()
     year, month = now.year, now.month
 
-    # total balance (all accounts)
-    total_balance = Account.objects.filter(user=user).aggregate(Sum('balance'))['balance__sum'] or 0.0
+    # ยอดเงินรวมทุกบัญชี
+    total_balance = (
+        Account.objects.filter(user=user).aggregate(Sum("balance"))["balance__sum"]
+        or 0.0
+    )
 
-    # income & expense for current month
-    month_income = Income.objects.filter(user=user, date__year=year, date__month=month).aggregate(Sum('amount'))['amount__sum'] or 0.0
-    month_expense = Expense.objects.filter(user=user, date__year=year, date__month=month).aggregate(Sum('amount'))['amount__sum'] or 0.0
+    # รายรับ / รายจ่าย เดือนปัจจุบัน
+    month_income = (
+        Income.objects.filter(user=user, date__year=year, date__month=month)
+        .aggregate(Sum("amount"))["amount__sum"]
+        or 0.0
+    )
+    month_expense = (
+        Expense.objects.filter(user=user, date__year=year, date__month=month)
+        .aggregate(Sum("amount"))["amount__sum"]
+        or 0.0
+    )
 
-    # percent
+    # % รายจ่ายต่อรายรับ (เผื่ออยากใช้)
     if month_income > 0:
         expense_percentage = (month_expense / month_income) * 100
     else:
         expense_percentage = 0.0
 
-    # decide status and advice
-    # simple heuristic — you can tune thresholds
-    if total_balance >= 5000 and expense_percentage < 40:
-        status = "happy"
-        advice = "ยอดดีมาก! เก็บต่อไปนะ 🥳"
-    elif total_balance >= 1000 and expense_percentage < 60:
-        status = "neutral"
-        advice = "กำลังไปได้สวย แต่ระวังการใช้จ่ายเพิ่มนะ"
-    elif expense_percentage >= 80 or total_balance < 0:
-        status = "danger"
-        advice = "ระวัง! รายจ่ายสูงกว่ารายรับหรือยอดติดลบ ควรตรวจสอบ"
+    # กติกาอารมณ์ตาม savings rate
+    if month_income > 0:
+        saving_rate = ((month_income - month_expense) / month_income) * 100
     else:
-        status = "warn"
-        advice = "สัดส่วนรายจ่ายสูงขึ้น — ลองทบทวนการใช้จ่าย"
+        # ไม่มีรายรับ
+        if month_expense == 0:
+            saving_rate = 100.0   # ถือว่าโอเค ยังไม่ใช้เงิน
+        else:
+            saving_rate = 0.0     # ใช้เงินโดยไม่มีรายรับ
+
+    # clamp ไว้หน่อยกันค่าประหลาด
+    saving_rate = max(-999.0, min(100.0, saving_rate))
+
+    if saving_rate >= 66:
+        status = "happy"
+        advice = "โห! เก็บเงินได้ดีมากเลย 🎉 รักษาระดับนี้ไว้นะ!"
+    elif saving_rate <= 33:
+        status = "danger"
+        advice = "ระวังนิดนึงนะ รายจ่ายเริ่มหนักกว่าเงินที่เข้าแล้ว ⚠️"
+    else:
+        status = "neutral"
+        advice = "ใช้จ่ายได้โอเคอยู่ แต่ลองเก็บเพิ่มอีกนิดจะดีมากเลย 😊"
 
     data = {
         "total_balance": round(total_balance, 2),
         "month_income": round(month_income, 2),
         "month_expense": round(month_expense, 2),
         "expense_percentage": round(expense_percentage, 2),
+        "saving_rate": round(saving_rate, 2),
         "advice": advice,
-        "status": status,
+        "status": status,  # happy / neutral / danger
     }
     return JsonResponse(data)
