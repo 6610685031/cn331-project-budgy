@@ -44,7 +44,6 @@ urlpatterns = [
     path("api/accounts/", views.accounts_api, name="accounts_api"),
     
     #MASCOT
-    path('pet/', views.pet_page, name='pet_page'),
     path('pet/chat/', views.pet_chat_api, name='pet_chat_api'),
     path('pet/status/', views.pet_status_api, name='pet_status_api'),
 
