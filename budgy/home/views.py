@@ -15,11 +15,15 @@ from .models import Transaction, Account, Category, MonthReport, Income, Expense
 import calendar
 import json
 from django.views.decorators.http import require_POST
-from .forms import UsernameUpdateForm, EmailUpdateForm, ProfilePictureUpdateForm, AccountDeleteForm
+from .forms import (
+    UsernameUpdateForm,
+    EmailUpdateForm,
+    ProfilePictureUpdateForm,
+    AccountDeleteForm,
+)
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import Profile
-
 
 
 # Create your views here
@@ -33,45 +37,49 @@ def landing_page(request, user_id=None):
 @login_required(login_url="/login/")
 def home_page(request, user_id):
     user = request.user
-    
+
     # --- 1. คำนวณยอดเงินคงเหลือทั้งหมด ---
     # ดึงข้อมูล accounts ทั้งหมดของผู้ใช้ แล้วรวมยอด balance
     # หากไม่มี account เลย ให้ค่าเป็น 0
-    total_balance = Account.objects.filter(user=user).aggregate(Sum('balance'))['balance__sum'] or 0
+    total_balance = (
+        Account.objects.filter(user=user).aggregate(Sum("balance"))["balance__sum"] or 0
+    )
 
     # --- 2. คำนวณยอดรวมของเดือนปัจจุบัน ---
     current_year = datetime.now().year
     current_month = datetime.now().month
 
     # ยอดรวมรายรับของเดือนปัจจุบัน
-    month_income = Income.objects.filter(
-        user=user,
-        date__year=current_year,
-        date__month=current_month
-    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    month_income = (
+        Income.objects.filter(
+            user=user, date__year=current_year, date__month=current_month
+        ).aggregate(Sum("amount"))["amount__sum"]
+        or 0
+    )
 
     # ยอดรวมรายจ่ายของเดือนปัจจุบัน
-    month_expense = Expense.objects.filter(
-        user=user,
-        date__year=current_year,
-        date__month=current_month
-    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    month_expense = (
+        Expense.objects.filter(
+            user=user, date__year=current_year, date__month=current_month
+        ).aggregate(Sum("amount"))["amount__sum"]
+        or 0
+    )
 
     # --- 3. คำนวณสัดส่วนรายจ่ายต่อรายรับ ---
     # ป้องกันการหารด้วยศูนย์ หากเดือนนี้ยังไม่มีรายรับ
     if month_income > 0:
         expense_percentage = (month_expense / month_income) * 100
     else:
-        expense_percentage = 0 # ถ้าไม่มีรายรับ ให้สัดส่วนเป็น 0
+        expense_percentage = 0  # ถ้าไม่มีรายรับ ให้สัดส่วนเป็น 0
 
     # --- 4. สร้าง context เพื่อส่งข้อมูลไปที่ Template ---
     context = {
-        'total_balance': total_balance,
-        'month_income': month_income,
-        'month_expense': month_expense,
-        'expense_percentage': expense_percentage
+        "total_balance": total_balance,
+        "month_income": month_income,
+        "month_expense": month_expense,
+        "expense_percentage": expense_percentage,
     }
-    
+
     return render(request, "home/home.html", context)
 
 
@@ -477,15 +485,21 @@ def stats_page(request, user_id):
     user = request.user
     # ดึงปีทั้งหมดที่มีการทำรายการ เพื่อไปสร้างเป็นตัวเลือกใน dropdown
     # เรียงจากปีล่าสุดไปหาเก่าสุด
-    years_with_transactions = Transaction.objects.filter(user=user).dates('date', 'year', order='DESC')
-    
+    years_with_transactions = Transaction.objects.filter(user=user).dates(
+        "date", "year", order="DESC"
+    )
+
     # ดึงเดือนและปีทั้งหมดที่มีรายการ expense เพื่อใช้ในหน้า Compare
-    expense_months = Expense.objects.filter(user=user) \
-        .dates('date', 'month', order='DESC')
-        
+    expense_months = Expense.objects.filter(user=user).dates(
+        "date", "month", order="DESC"
+    )
+
     context = {
-        'years': [d.year for d in years_with_transactions],
-        'expense_months': [{'value': d.strftime('%Y-%m'), 'text': d.strftime('%B %Y')} for d in expense_months]
+        "years": [d.year for d in years_with_transactions],
+        "expense_months": [
+            {"value": d.strftime("%Y-%m"), "text": d.strftime("%B %Y")}
+            for d in expense_months
+        ],
     }
     return render(request, "home/stats.html", context)
 
@@ -497,28 +511,29 @@ def stats_summary_api(request):
     รับ parameter: ?year=YYYY&month=MM&type=income
     """
     user = request.user
-    year = request.GET.get('year')
-    month = request.GET.get('month')
-    trans_type = request.GET.get('type') # 'income' or 'expense'
+    year = request.GET.get("year")
+    month = request.GET.get("month")
+    trans_type = request.GET.get("type")  # 'income' or 'expense'
 
     if not all([year, month, trans_type]):
-        return JsonResponse({'error': 'Missing parameters'}, status=400)
+        return JsonResponse({"error": "Missing parameters"}, status=400)
 
-    model = Income if trans_type == 'income' else Expense
+    model = Income if trans_type == "income" else Expense
 
     # Query ข้อมูลและจัดกลุ่มตาม category
-    summary = model.objects.filter(
-        user=user,
-        date__year=year,
-        date__month=month
-    ).values('category_trans').annotate(total=Sum('amount')).order_by('-total')
+    summary = (
+        model.objects.filter(user=user, date__year=year, date__month=month)
+        .values("category_trans")
+        .annotate(total=Sum("amount"))
+        .order_by("-total")
+    )
 
-    overall_total = sum(item['total'] for item in summary)
+    overall_total = sum(item["total"] for item in summary)
 
     data = {
-        'labels': [item['category_trans'] for item in summary],
-        'values': [item['total'] for item in summary],
-        'overall_total': overall_total,
+        "labels": [item["category_trans"] for item in summary],
+        "values": [item["total"] for item in summary],
+        "overall_total": overall_total,
     }
     return JsonResponse(data)
 
@@ -530,30 +545,32 @@ def stats_yearly_api(request):
     รับ parameter: ?year=YYYY
     """
     user = request.user
-    year = request.GET.get('year')
+    year = request.GET.get("year")
 
     if not year:
-        return JsonResponse({'error': 'Year parameter is required'}, status=400)
+        return JsonResponse({"error": "Year parameter is required"}, status=400)
 
     income_data = []
     expense_data = []
     month_labels = [calendar.month_name[i] for i in range(1, 13)]
 
     for month in range(1, 13):
-        income_total = Income.objects.filter(
-            user=user, date__year=year, date__month=month
-        ).aggregate(Sum('amount'))['amount__sum'] or 0
-        expense_total = Expense.objects.filter(
-            user=user, date__year=year, date__month=month
-        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        income_total = (
+            Income.objects.filter(
+                user=user, date__year=year, date__month=month
+            ).aggregate(Sum("amount"))["amount__sum"]
+            or 0
+        )
+        expense_total = (
+            Expense.objects.filter(
+                user=user, date__year=year, date__month=month
+            ).aggregate(Sum("amount"))["amount__sum"]
+            or 0
+        )
         income_data.append(income_total)
         expense_data.append(expense_total)
-        
-    data = {
-        'labels': month_labels,
-        'income': income_data,
-        'expense': expense_data
-    }
+
+    data = {"labels": month_labels, "income": income_data, "expense": expense_data}
     return JsonResponse(data)
 
 
@@ -565,52 +582,57 @@ def settings_page(request, user_id):
         profile = request.user.profile
     except Profile.DoesNotExist:
         profile = Profile.objects.create(user=request.user)
-        
+
     # สร้าง instance ของฟอร์มต่างๆ (ใช้ 'profile' ที่เราเพิ่งสร้าง)
     u_form = UsernameUpdateForm(instance=request.user)
     p_form = ProfilePictureUpdateForm(instance=profile)
-    
-    if request.method == 'POST':
+    e_form = EmailUpdateForm(instance=request.user)
+
+    if request.method == "POST":
         # ตรวจสอบว่าปุ่มไหนถูกกด
-        if 'update_username' in request.POST:
+        if "update_username" in request.POST:
             u_form = UsernameUpdateForm(request.POST, instance=request.user)
             if u_form.is_valid():
                 u_form.save()
-                messages.success(request, 'Your username has been updated!')
-                return redirect('settings', user_id=request.user.id)
-            
-        elif 'update_email' in request.POST: # <-- เพิ่มเงื่อนไขสำหรับอีเมล
+                messages.success(request, "Your username has been updated!")
+                return redirect("settings", user_id=request.user.id)
+
+        elif "update_email" in request.POST:  # <-- เพิ่มเงื่อนไขสำหรับอีเมล
             e_form = EmailUpdateForm(request.POST, instance=request.user)
             if e_form.is_valid():
                 e_form.save()
-                messages.success(request, 'Your email has been updated!')
-                return redirect('settings', user_id=request.user.id)
+                messages.success(request, "Your email has been updated!")
+                return redirect("settings", user_id=request.user.id)
 
-        elif 'update_picture' in request.POST:
-            p_form = ProfilePictureUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        elif "update_picture" in request.POST:
+            p_form = ProfilePictureUpdateForm(
+                request.POST, request.FILES, instance=request.user.profile
+            )
             if p_form.is_valid():
                 p_form.save()
-                messages.success(request, 'Your profile picture has been updated!')
-                return redirect('settings', user_id=request.user.id)
-            
+                messages.success(request, "Your profile picture has been updated!")
+                return redirect("settings", user_id=request.user.id)
+
         # ---- เปิด/ปิด Mascot ----
-        elif 'update_mascot' in request.POST:
+        elif "update_mascot" in request.POST:
             # ถ้า checkbox ถูกติ๊ก => มี key 'show_mascot' ใน POST
-            profile.show_mascot = 'show_mascot' in request.POST
+            profile.show_mascot = "show_mascot" in request.POST
             profile.save()
-            messages.success(request, 'Mascot setting has been updated!')
-            return redirect('settings', user_id=request.user.id)
+            messages.success(request, "Mascot setting has been updated!")
+            return redirect("settings", user_id=request.user.id)
 
     context = {
-        'u_form': u_form,
-        'p_form': p_form
+        "u_form": u_form,
+        "p_form": p_form,
+        "e_form": e_form,
+        "profile": profile,
     }
-    return render(request, 'home/settings.html', context)
+    return render(request, "home/settings.html", context)
 
 
 @login_required
 def delete_account_page(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = AccountDeleteForm(request.POST)
         if form.is_valid():
             user = request.user
@@ -620,12 +642,14 @@ def delete_account_page(request):
                 logout(request)
                 # ทำการลบ user
                 user.delete()
-                messages.success(request, 'Your account has been permanently deleted.')
-                return redirect('login') # เปลี่ยน 'login' เป็นชื่อ URL หน้า login ของคุณใน authorized app
+                messages.success(request, "Your account has been permanently deleted.")
+                return redirect(
+                    "login"
+                )  # เปลี่ยน 'login' เป็นชื่อ URL หน้า login ของคุณใน authorized app
             else:
-                messages.error(request, 'Incorrect password. Account not deleted.')
-    
-    return redirect('settings')
+                messages.error(request, "Incorrect password. Account not deleted.")
+
+    return redirect("settings")
 
 
 def contact(request):
@@ -635,7 +659,7 @@ def contact(request):
 @login_required(login_url="/login/")
 def account_management_page(request, user_id):
     user = request.user
-    
+
     # Logic สำหรับการสร้าง Account ใหม่ (POST request)
     if request.method == "POST":
         account_name = request.POST.get("account_name")
@@ -649,51 +673,64 @@ def account_management_page(request, user_id):
             messages.error(request, "Account name is required.")
         # ตรวจสอบว่ามีชื่อ Account นี้อยู่แล้วหรือไม่
         elif Account.objects.filter(user=user, account_name=account_name).exists():
-            messages.error(request, f"Account with name '{account_name}' already exists.")
+            messages.error(
+                request, f"Account with name '{account_name}' already exists."
+            )
         else:
-            Account.objects.create(user=user, account_name=account_name, balance=balance, type_acc="Default")
+            Account.objects.create(
+                user=user,
+                account_name=account_name,
+                balance=balance,
+                type_acc="Default",
+            )
             messages.success(request, f"Account '{account_name}' created successfully.")
-        
+
         return redirect("account_management", user_id=user.id)
 
     # ดึงข้อมูล Account ทั้งหมดมาแสดง (GET request)
-    accounts = Account.objects.filter(user=user).order_by('id')
-    context = {
-        'accounts': accounts
-    }
+    accounts = Account.objects.filter(user=user).order_by("id")
+    context = {"accounts": accounts}
     return render(request, "home/accounts_management.html", context)
 
 
 @login_required
-@require_POST # บังคับให้ View นี้รับเฉพาะ POST request เพื่อความปลอดภัย
+@require_POST  # บังคับให้ View นี้รับเฉพาะ POST request เพื่อความปลอดภัย
 def update_account_api(request, account_id):
     try:
         user = request.user
         account = get_object_or_404(Account, pk=account_id, user=user)
 
         # เงื่อนไขป้องกันการแก้ไข 'Cash'
-        if account.account_name == 'Cash':
-            return JsonResponse({'error': "The 'Cash' account cannot be edited."}, status=403)
+        if account.account_name == "Cash":
+            return JsonResponse(
+                {"error": "The 'Cash' account cannot be edited."}, status=403
+            )
 
         # ดึงข้อมูลชื่อใหม่จาก request body (ที่ส่งมาจาก JavaScript)
         data = json.loads(request.body)
-        new_name = data.get('account_name', '').strip()
+        new_name = data.get("account_name", "").strip()
 
         if not new_name:
-            return JsonResponse({'error': 'Account name cannot be empty.'}, status=400)
-        
+            return JsonResponse({"error": "Account name cannot be empty."}, status=400)
+
         # ตรวจสอบชื่อซ้ำ
-        if Account.objects.filter(user=user, account_name=new_name).exclude(pk=account_id).exists():
-            return JsonResponse({'error': f"Account with name '{new_name}' already exists."}, status=400)
+        if (
+            Account.objects.filter(user=user, account_name=new_name)
+            .exclude(pk=account_id)
+            .exists()
+        ):
+            return JsonResponse(
+                {"error": f"Account with name '{new_name}' already exists."}, status=400
+            )
 
         # อัปเดตและบันทึก
         account.account_name = new_name
         account.save()
 
-        return JsonResponse({'success': True, 'new_name': account.account_name})
+        return JsonResponse({"success": True, "new_name": account.account_name})
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @login_required(login_url="/login/")
@@ -702,15 +739,19 @@ def delete_account_view(request, user_id, account_id):
     account = get_object_or_404(Account, pk=account_id, user=user)
 
     if request.method == "POST":
-        if account.account_name == 'Cash':
+        if account.account_name == "Cash":
             messages.error(request, "The 'Cash' account cannot be deleted.")
         elif account.balance != 0:
-            messages.error(request, f"Cannot delete '{account.account_name}' because it still has a balance. Please transfer the funds first.")
+            messages.error(
+                request,
+                f"Cannot delete '{account.account_name}' because it still has a balance. Please transfer the funds first.",
+            )
         else:
             account.delete()
             messages.success(request, "Account deleted successfully.")
-    
+
     return redirect("account_management", user_id=user.id)
+
 
 # ----------------------------Mascot---------------------------
 
@@ -718,6 +759,7 @@ import random
 from django.views.decorators.http import require_GET
 from django.db.models import Sum
 from datetime import datetime
+
 
 @login_required
 @require_GET
@@ -745,17 +787,19 @@ def pet_status_api(request):
 
     # รายรับ / รายจ่าย เดือนปัจจุบัน
     month_income = (
-        Income.objects.filter(user=user, date__year=year, date__month=month)
-        .aggregate(Sum("amount"))["amount__sum"]
+        Income.objects.filter(user=user, date__year=year, date__month=month).aggregate(
+            Sum("amount")
+        )["amount__sum"]
         or 0.0
     )
     month_expense = (
-        Expense.objects.filter(user=user, date__year=year, date__month=month)
-        .aggregate(Sum("amount"))["amount__sum"]
+        Expense.objects.filter(user=user, date__year=year, date__month=month).aggregate(
+            Sum("amount")
+        )["amount__sum"]
         or 0.0
     )
 
-    # % รายจ่ายต่อรายรับ 
+    # % รายจ่ายต่อรายรับ
     if month_income > 0:
         expense_percentage = (month_expense / month_income) * 100
     else:
@@ -767,9 +811,9 @@ def pet_status_api(request):
     else:
         # ไม่มีรายรับ
         if month_expense == 0:
-            saving_rate = 100.0   # ถือว่าโอเค ยังไม่ใช้เงิน
+            saving_rate = 100.0  # ถือว่าโอเค ยังไม่ใช้เงิน
         else:
-            saving_rate = 0.0     # ใช้เงินโดยไม่มีรายรับ
+            saving_rate = 0.0  # ใช้เงินโดยไม่มีรายรับ
 
     # clamp ไว้กันค่าประหลาดที่ไม่ควรเกิดขึ้น
     saving_rate = max(-999.0, min(100.0, saving_rate))
