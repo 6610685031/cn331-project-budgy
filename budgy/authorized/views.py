@@ -7,6 +7,14 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from home.models import Account
 
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+
 # Create your views here.
 
 
@@ -91,3 +99,69 @@ def register(request):
             {"registry": "Register success"},
         )
     return render(request, "authorized/register.html")
+
+
+# Forgot Password
+def forgot_password(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, "Email not found.")
+            return redirect("forgot_password")
+
+        # Generate token + uid
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        reset_link = request.build_absolute_uri(
+            reverse("reset_password", kwargs={"uidb64": uid, "token": token})
+        )
+
+        # Send email
+        send_mail(
+            subject="Reset Your Password",
+            message=f"Click the link to reset your password:\n{reset_link}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+        )
+
+        messages.success(request, "Password reset link sent to your email.")
+        return redirect("login")
+
+    return render(request, "authorized/forgot_password.html")
+
+
+# Reset Password
+def reset_password(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except Exception:
+        messages.error(request, "Invalid reset link.")
+        return redirect("login")
+
+    if not default_token_generator.check_token(user, token):
+        messages.error(request, "Reset link expired or invalid.")
+        return redirect("forgot_password")
+
+    if request.method == "POST":
+        password = request.POST.get("password")
+        confirm = request.POST.get("confirm")
+
+        if password != confirm:
+            messages.error(request, "Passwords do not match.")
+            return redirect(
+                reverse("reset_password", kwargs={"uidb64": uidb64, "token": token})
+            )
+
+        # Save new password
+        user.password = make_password(password)
+        user.save()
+
+        messages.success(request, "Password reset successfully.")
+        return redirect("login")
+
+    return render(request, "authorized/reset_password.html")

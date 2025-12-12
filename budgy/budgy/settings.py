@@ -122,8 +122,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -131,3 +131,15 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Email Configuration
+# https://docs.djangoproject.com/en/5.2/ref/settings/#email-backends/
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.mailersend.net"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+EMAIL_HOST_USER = "MS_9QHn23@test-dnvo4d93xpng5r86.mlsender.net"
+EMAIL_HOST_PASSWORD = "mssp.mUZKOhn.neqvygm3vx5l0p7w.92h1axM"
+DEFAULT_FROM_EMAIL = "MS_9QHn23@test-dnvo4d93xpng5r86.mlsender.net"
