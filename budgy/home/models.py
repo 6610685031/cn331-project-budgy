@@ -2,9 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-# Create your models here.
-
-
 # Category Model
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -14,7 +11,8 @@ class Category(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["trans_type", "category_name", "user"], name="unique_user_type_category"
+                fields=["trans_type", "category_name", "user"],
+                name="unique_user_type_category",
             )
         ]
 
@@ -64,18 +62,12 @@ class Income(Transaction):
 class Expense(Transaction):
     from_account = models.ForeignKey(Account, on_delete=models.CASCADE)
 
+
+# Mascot status on/off
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='default.png', upload_to='profile_pics')
-
-    def __str__(self):
-        return f'{self.user.username} Profile'
-
-#Mascot status on/off
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='default.png', upload_to='profile_pics')
+    image = models.ImageField(default="default.png", upload_to="profile_pics")
     show_mascot = models.BooleanField(default=True)  # 👈 เพิ่มบรรทัดนี้
 
     def __str__(self):
-        return f'{self.user.username} Profile'
+        return f"{self.user.username} Profile"
