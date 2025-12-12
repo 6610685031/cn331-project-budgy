@@ -1193,3 +1193,200 @@ class AccountManagementTests(TestCase):
         self.assertEqual(response.status_code, 500)
         data = json.loads(response.content.decode())
         self.assertIn("error", data)
+
+# -----------------------Iteration3----------------------------
+
+class Mascot(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="accuser", password="password")
+        self.client = Client()
+        self.client.login(username="accuser", password="password")
+
+        # สร้างบัญชี Cash เริ่มต้น
+        self.cash = Account.objects.create(
+            user=self.user, account_name="Cash", type_acc="Default", balance=0
+        )
+
+        #สร้างบัญชี Bank 
+        self.bank = Account.objects.create(
+            user=self.user, account_name="Bank", type_acc="Saving", balance=0
+        )
+
+        self.url_chat = reverse("pet_chat_api")
+        self.url_status = reverse("pet_status_api")
+
+    #--------setting page view switch to enable/disable mascot ------
+    def test_enable_mascot(self):
+        """ทดสอบการเปิด mascot (enable switch)"""
+        url = reverse('settings', kwargs={'user_id': self.user.id})
+
+        response = self.client.post(url, {
+            'update_mascot': '1',
+            'show_mascot': 'on',  
+        })
+
+        self.user.refresh_from_db()
+        profile = self.user.profile
+
+        self.assertTrue(profile.show_mascot)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, url)
+
+    def test_disable_mascot(self):
+        """ทดสอบการปิด mascot """
+        # ทำให้เริ่มต้นเป็น True ก่อน
+        profile = self.user.profile
+        profile.show_mascot = True
+        profile.save()
+
+        url = reverse('settings', kwargs={'user_id': self.user.id})
+
+        response = self.client.post(url, {
+            'update_mascot': '1',
+            # ไม่มี show_mascot -> mascot disable
+        })
+
+        self.user.refresh_from_db()
+        profile = self.user.profile
+
+        self.assertFalse(profile.show_mascot)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, url)
+
+    #-----------------mascot check--------------------
+
+    # test get chat api
+    def test_pet_chat_api_get(self):
+        """ทดสอบว่า GET /pet/chat/ แล้วได้ JSON ถูกต้อง"""
+        response = self.client.get(self.url_chat)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        self.assertIn("text", response.json())
+        self.assertEqual(response.json()["text"], "")
+    
+    # test ว่าคำนวณค่าต่างๆ สำหรับ mascot ถูกต้องไหม
+    def test_calculation_for_mascot(self):
+        """
+        ทดสอบคำนวณตัวเลขทั้งหมด:
+        total_balance, income, expense, expense_percentage, saving_rate
+        """
+        now = timezone.now()
+
+        # ตั้งค่า 2 account
+        self.cash.balance = 300
+        self.cash.save()
+        self.bank.balance = 700
+        self.bank.save()
+
+        # income / expense
+        Income.objects.create(user=self.user, amount=1400, date=now, to_account=self.cash)
+        Expense.objects.create(user=self.user, amount=400, date=now, from_account=self.bank)
+
+        self.cash.balance += 1400
+        self.cash.save()
+        self.bank.balance -= 400
+        self.bank.save()
+
+        response = self.client.get(self.url_status)
+        data = response.json()
+
+        expected_total_balance = (300+1400)+(700-400)
+        expected_income = 1400
+        expected_expense = 400
+        expected_exp_percent = round((400/1400) * 100, 2)
+        expected_saving_rate = round(((1400 - 400) / 1400) * 100, 2)
+
+        # ตรวจครบทุก numeric field
+        self.assertEqual(data["total_balance"], expected_total_balance)
+        self.assertEqual(data["month_income"], expected_income)
+        self.assertEqual(data["month_expense"], expected_expense)
+        self.assertEqual(data["expense_percentage"], expected_exp_percent)
+        self.assertEqual(data["saving_rate"], expected_saving_rate)
+    
+    # test กรณีไม่มีรายรับรายจ่าย
+    def test_mascot_no_income_and_expense(self):
+       """
+       ไม่มีรายรับ/รายจ่าย
+       → saving_rate = 100, status = happy
+       """
+       response = self.client.get(self.url_status)
+       data = response.json()
+
+       self.assertEqual(response.status_code, 200)
+       self.assertEqual(data["total_balance"], 0)
+       self.assertEqual(data["saving_rate"], 100)
+       self.assertEqual(data["status"], "happy")
+
+    # test กรณีไม่มีรายรับแต่มีรายจ่าย
+    def test_mascot_no_income_but_expense(self):
+        """
+        ไม่มีรายรับแต่มีรายจ่าย
+        → saving_rate = 100, status = danger
+        """
+        now = timezone.now()
+
+        self.cash.balance = 500
+        self.cash.save()
+
+        Income.objects.create(user=self.user, amount=0, date=now, to_account=self.cash)
+        Expense.objects.create(user=self.user, amount=400, date=now, from_account=self.cash)
+
+        response = self.client.get(self.url_status)
+        data = response.json()
+
+        self.assertEqual(data["saving_rate"], 0)
+        self.assertEqual(data["status"], "danger")
+        self.assertEqual(data["advice"], "ระวังนิดนึงนะ รายจ่ายเริ่มหนักกว่าเงินที่เข้าแล้ว ⚠️")
+    
+    # test กรณีมีรายรับและ status เป็น happy
+    def test_mascot_have_income_status_happy(self):
+        """
+        รายรับมากกว่ารายจ่าย (saving_rate >= 66) → happy
+        """
+        now = timezone.now()
+
+        Income.objects.create(user=self.user, amount=2000, date=now, to_account=self.cash)
+        Expense.objects.create(user=self.user, amount=400, date=now, from_account=self.cash)
+
+        response = self.client.get(self.url_status)
+        data = response.json()
+
+        self.assertEqual(data["saving_rate"], 80)
+        self.assertEqual(data["status"], "happy")
+        self.assertEqual(data["advice"], "โห! เก็บเงินได้ดีมากเลย 🎉 รักษาระดับนี้ไว้นะ!")
+    
+    # test กรณีมีรายรับและ status เป็น danger
+    def test_mascot_have_income_status_danger(self):
+        """
+        รายจ่ายเยอะมาก (saving_rate <= 33) → danger
+        """
+        now = timezone.now()
+
+        Income.objects.create(user=self.user, amount=2000, date=now, to_account=self.cash)
+        Expense.objects.create(user=self.user, amount=1500, date=now, from_account=self.cash)
+
+        response = self.client.get(self.url_status)
+        data = response.json()
+
+        self.assertEqual(data["saving_rate"], 25)
+        self.assertEqual(data["status"], "danger")
+        self.assertEqual(data["advice"], "ระวังนิดนึงนะ รายจ่ายเริ่มหนักกว่าเงินที่เข้าแล้ว ⚠️")
+    
+    # test กรณีมีรายรับและ status เป็น neutral
+    def test_mascot_status_neutral(self):
+        """
+        saving_rate อยู่กลาง ๆ (33 < saving_rate < 66) → neutral
+        """
+        now = timezone.now()
+
+        Income.objects.create(user=self.user, amount=2000, date=now, to_account=self.cash)
+        Expense.objects.create(user=self.user, amount=1000, date=now, from_account=self.cash)
+
+        response = self.client.get(self.url_status)
+        data = response.json()
+
+        self.assertEqual(data["saving_rate"], 50)
+        self.assertEqual(data["status"], "neutral")
+        self.assertEqual(data["advice"], "ใช้จ่ายได้โอเคอยู่ แต่ลองเก็บเพิ่มอีกนิดจะดีมากเลย 😊")
+    
