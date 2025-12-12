@@ -719,50 +719,13 @@ from django.views.decorators.http import require_GET
 from django.db.models import Sum
 from datetime import datetime
 
-@login_required(login_url="/login/")
-def pet_page(request, user_id=None):
-    return render(request, "home/pet.html", {})
-
-
-@login_required
-@require_GET
-def pet_chat_api(request):
-    LINES = [
-        "ฮัลโหล~ มีอะไรให้ช่วยไหม?",
-        "พักสายตาหน่อยนะ~",
-        "ช่วงนี้โค้ดเยอะจัง...",
-        "อยากกินขนม~",
-        "เดี๋ยวไปขยับตัวก่อนนะ",
-        "อยากได้กาแฟมั้ยครับ?",
-    ]
-    text = random.choice(LINES)
-    return JsonResponse({"text": text})
-
-
-@login_required(login_url="/login/")
-def pet_page(request, user_id=None):
-    """
-    ถ้าอยากมีหน้าเทสเฉพาะ mascot ก็ใช้ view นี้
-    (แต่ในโปรเจกต์จริง เราใช้ mascot แปะใน layout.html อยู่แล้ว)
-    """
-    return render(request, "home/pet.html", {})
-
-
 @login_required
 @require_GET
 def pet_chat_api(request):
     """
-    แชทสุ่มทั่วไป เวลาน้องพูดเล่น / fallback
+    แชทสุ่มทั่วไป เ
     """
-    LINES = [
-        "ฮัลโหล~ มีอะไรให้ช่วยไหม?",
-        "พักสายตาหน่อยนะ~",
-        "ช่วงนี้โค้ดเยอะจัง...",
-        "อยากกินขนม~",
-        "เดี๋ยวไปขยับตัวก่อนนะ",
-        "อยากได้กาแฟมั้ยครับ?",
-    ]
-    text = random.choice(LINES)
+    text = ""
     return JsonResponse({"text": text})
 
 
@@ -792,13 +755,13 @@ def pet_status_api(request):
         or 0.0
     )
 
-    # % รายจ่ายต่อรายรับ (เผื่ออยากใช้)
+    # % รายจ่ายต่อรายรับ 
     if month_income > 0:
         expense_percentage = (month_expense / month_income) * 100
     else:
         expense_percentage = 0.0
 
-    # กติกาอารมณ์ตาม savings rate
+    # อารมณ์ตาม savings rate
     if month_income > 0:
         saving_rate = ((month_income - month_expense) / month_income) * 100
     else:
