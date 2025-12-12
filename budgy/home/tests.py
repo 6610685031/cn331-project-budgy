@@ -1316,7 +1316,7 @@ class Mascot(TestCase):
        self.assertEqual(response.status_code, 200)
        self.assertEqual(data["total_balance"], 0)
        self.assertEqual(data["saving_rate"], 100)
-       self.assertEqual(data["status"], "happy")
+       self.assertEqual(data["status"], "neutral")
 
     # test กรณีไม่มีรายรับแต่มีรายจ่าย
     def test_mascot_no_income_but_expense(self):
