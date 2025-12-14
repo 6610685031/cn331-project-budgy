@@ -11,6 +11,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 
+
 class AuthorizedViewsTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -124,20 +125,20 @@ class AuthorizedViewsTests(TestCase):
             response, reverse("home", kwargs={"user_id": self.user.id})
         )
 
-#-------------------------Iteration3--------------------------------
+
+# -------------------------Iteration3--------------------------------
+
 
 class PasswordViewsTests(TestCase):
     def setUp(self):
         self.client = Client()
         # สร้าง user ตัวอย่าง
         self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="123456"
+            username="testuser", email="test@example.com", password="123456"
         )
-    
-    @patch("authorized.views.send_mail")
-    def test_forgot_password_success(self, mock_send_mail):
+
+    @patch("authorized.views.send_email")
+    def test_forgot_password_success(self, mock_send_email):
         """
         กรณีใส่ email ถูกต้อง → ส่งลิงก์ reset และ redirect ไป login
         """
@@ -151,8 +152,8 @@ class PasswordViewsTests(TestCase):
         self.assertEqual(response.url, reverse("login"))
 
         # มีการส่ง email
-        mock_send_mail.assert_called_once()
-    
+        mock_send_email.assert_called_once()
+
     def test_forgot_password_email_not_found(self):
         """
         กรณี email ไม่ถูกต้อง → redirect กลับ forgot_password พร้อมแสดง error
@@ -167,14 +168,11 @@ class PasswordViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # ตรวจ redirect chain
-        self.assertEqual(
-            response.redirect_chain,
-            [(reverse("forgot_password"), 302)]
-        )
+        self.assertEqual(response.redirect_chain, [(reverse("forgot_password"), 302)])
 
         # ตรวจว่ามีข้อความ error
         self.assertContains(response, "Email not found.")
-    
+
     def test_reset_password_invalid_uid(self):
 
         response = self.client.get(
@@ -184,7 +182,7 @@ class PasswordViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "authorized/login.html")
         self.assertContains(response, "Invalid reset link.")
-    
+
     def test_reset_password_invalid_token(self):
         uid = urlsafe_base64_encode(force_bytes(self.user.pk))
         bad_token = "invalidtoken123"
@@ -197,7 +195,7 @@ class PasswordViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "authorized/forgot_password.html")
         self.assertContains(response, "Reset link expired or invalid.")
-    
+
     def test_reset_password_mismatch(self):
         uid = urlsafe_base64_encode(force_bytes(self.user.pk))
         token = default_token_generator.make_token(self.user)
@@ -210,7 +208,7 @@ class PasswordViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Passwords do not match.")
-    
+
     def test_reset_password_success(self):
         uid = urlsafe_base64_encode(force_bytes(self.user.pk))
         token = default_token_generator.make_token(self.user)
@@ -225,7 +223,5 @@ class PasswordViewsTests(TestCase):
         self.assertContains(response, "Password reset successfully.")
 
         # เช็คว่า login ผ่านจริง
-        login_success = self.client.login(
-            username="testuser", password="newpass123"
-        )
+        login_success = self.client.login(username="testuser", password="newpass123")
         self.assertTrue(login_success)
