@@ -550,7 +550,7 @@
             path.includes("dashboard");
 
           // ---------- MODE 1: หน้าแนะนำการใช้งาน (transaction + accounts + settings) ----------
-          if (isTransactionPage || isAccountsPage || isSettingsPage) {
+            if (isTransactionPage || isAccountsPage || isSettingsPage || isDashboard || isStats) {
             // ถ้ามี teachingSrc ก็ใช้ ไม่งั้น fallback เป็น idle
             if (typeof teachingSrc !== "undefined" && teachingSrc) {
               petEl.src = teachingSrc;
