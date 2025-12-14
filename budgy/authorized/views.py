@@ -10,7 +10,9 @@ from home.models import Account
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from django.core.mail import send_mail
+
+# from django.core.mail import send_mail
+from .utils.email import send_email
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -121,11 +123,10 @@ def forgot_password(request):
         )
 
         # Send email
-        send_mail(
+        send_email(
+            to_email=email,
             subject="Reset Your Password",
-            message=f"Click the link to reset your password:\n{reset_link}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
+            text_content=f"Click the link to reset your password:\n{reset_link}",
         )
 
         messages.success(request, "Password reset link sent to your email.")

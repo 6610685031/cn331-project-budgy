@@ -135,10 +135,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Email Configuration
 # https://docs.djangoproject.com/en/5.2/ref/settings/#email-backends/
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.mailersend.net"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.mailersend.net"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+# EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+MAILERSEND_API_KEY = os.environ.get("MAILERSEND_API_KEY")
+DEFAULT_FROM_EMAIL = "budgy@krentiz.dev"
