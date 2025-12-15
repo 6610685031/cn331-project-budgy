@@ -63,4 +63,4 @@ python manage.py flush
 ```
 
 ## วิดีโอตัวอย่างการใช้งาน
-[Demo Video Link](https://youtu.be/UQpImY3N0_A)
+[Demo Video Link](https://youtu.be/bNGkeYdZr34)
